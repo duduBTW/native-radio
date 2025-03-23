@@ -15,9 +15,12 @@ const (
 )
 
 type UIStruct struct {
-	SelectedSong       Song
-	Music              rl.Music
-	SidePanelScrollTop float32
+	SelectedSong        Song
+	Music               rl.Music
+	SidePanelScrollTop  float32
+	SelectedSongTexture rl.Texture2D
+	ScreenW             int32
+	ScreenH             int32
 }
 
 var UI = UIStruct{}
@@ -25,7 +28,8 @@ var UI = UIStruct{}
 func main() {
 	fmt.Println("Process ID:", os.Getpid())
 
-	rl.InitWindow(1200, 450, "raylib [core] example - basic window")
+	rl.SetConfigFlags(rl.FlagWindowResizable)
+	rl.InitWindow(800, 600, "raylib [core] example - basic window")
 	defer rl.CloseWindow()
 
 	rl.InitAudioDevice()
@@ -38,6 +42,9 @@ func main() {
 	for !rl.WindowShouldClose() {
 		rl.UpdateMusicStream(UI.Music)
 
+		UI.ScreenW = int32(rl.GetScreenWidth())
+		UI.ScreenH = int32(rl.GetScreenHeight())
+
 		rl.BeginDrawing()
 		rl.ClearBackground(rl.RayWhite)
 		switch currentPage {
@@ -47,6 +54,7 @@ func main() {
 			SetupWizardPage()
 		}
 
+		rl.DrawFPS(10, 10)
 		rl.EndDrawing()
 	}
 }

@@ -6,9 +6,10 @@ import (
 )
 
 type Song struct {
-	Audio    string `json:"audio"`
-	Title    string `json:"title"`
-	FileName string
+	Audio      string `json:"audio"`
+	Title      string `json:"title"`
+	Background string `json:"bg"`
+	FileName   string
 }
 
 type SongTable struct {
