@@ -14,16 +14,41 @@ const (
 	PAGE_SETUP_WIZARD Page = "setup-wizard"
 )
 
+type UITextures struct {
+	PanelRightIcon rl.Texture2D
+	Songs          map[string]rl.Texture2D
+}
+
 type UIStruct struct {
-	SelectedSong        Song
-	Music               rl.Music
-	SidePanelScrollTop  float32
-	SelectedSongTexture rl.Texture2D
-	ScreenW             int32
-	ScreenH             int32
+	SelectedSong       Song
+	Music              rl.Music
+	SidePanelScrollTop float32
+	ScreenW            int32
+	ScreenH            int32
+
+	ActiveId string
+	HotId    string
+}
+
+func (ui UIStruct) SelectedSongTexture() rl.Texture2D {
+	return Textures.Songs[ui.SelectedSong.FileName]
+}
+
+func (ui UIStruct) HasSelectedSong() bool {
+	return ui.SelectedSong.FileName != ""
 }
 
 var UI = UIStruct{}
+var Textures = UITextures{
+	Songs: make(map[string]rl.Texture2D),
+}
+
+func LoadTextures(songs SongTable) {
+	for _, song := range songs.Songs {
+		Textures.Songs[song.FileName] = rl.LoadTexture(song.Background)
+	}
+	Textures.PanelRightIcon = rl.LoadTexture("/Users/carloseduardoalvesdonascimento/Personal/osu-song-native/icons/panel-right.svg")
+}
 
 func main() {
 	fmt.Println("Process ID:", os.Getpid())
@@ -38,6 +63,7 @@ func main() {
 	var currentPage Page = PAGE_HOME
 	var songs = SongTable{}
 	songs.FromJson("/Users/carloseduardoalvesdonascimento/Personal/osu-song-native/songs.json")
+	LoadTextures(songs)
 
 	for !rl.WindowShouldClose() {
 		rl.UpdateMusicStream(UI.Music)

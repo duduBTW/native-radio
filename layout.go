@@ -1,40 +1,38 @@
 package main
 
 import (
-	"errors"
-
 	rl "github.com/gen2brain/raylib-go/raylib"
 )
 
 type Padding struct {
-	top    int
-	bottom int
-	start  int
-	end    int
+	top    float32
+	bottom float32
+	start  float32
+	end    float32
 }
 
-func (p *Padding) Axis(horizontal, vertical int) {
+func (p *Padding) Axis(horizontal, vertical float32) {
 	p.top = vertical
 	p.bottom = vertical
 	p.start = horizontal
 	p.end = horizontal
 }
-func (p *Padding) All(padding int) {
+func (p *Padding) All(padding float32) {
 	p.top = padding
 	p.bottom = padding
 	p.start = padding
 	p.end = padding
 }
-func (p *Padding) Top(top int) {
+func (p *Padding) Top(top float32) {
 	p.top = top
 }
-func (p *Padding) Bottom(bottom int) {
+func (p *Padding) Bottom(bottom float32) {
 	p.bottom = bottom
 }
-func (p *Padding) Start(start int) {
+func (p *Padding) Start(start float32) {
 	p.start = start
 }
-func (p *Padding) End(end int) {
+func (p *Padding) End(end float32) {
 	p.end = end
 }
 
@@ -61,108 +59,84 @@ const (
 )
 
 type Position struct {
-	X int
-	Y int
-	W int
-	H int
+	X         float32
+	Y         float32
+	Contrains rl.Rectangle
 }
-type ChildSize struct {
-	SizeType
-	Value float32
+
+func (position Position) ToRect(width, height float32) rl.Rectangle {
+	return rl.NewRectangle(position.X, position.Y, width, height)
 }
+
+type Size struct {
+	Width  float32
+	Height float32
+}
+
 type Layout struct {
 	Padding
 
 	index int
 
-	Direction             Direction
-	Gap                   int
-	VerticalAlignment     Alignment
-	HorizontalAlighment   Alignment
-	Contrains             rl.Rectangle
-	ChildrenSize          []ChildSize
-	ChildrenComputedSizes []float32
+	Direction           Direction
+	Gap                 int
+	VerticalAlignment   Alignment
+	HorizontalAlighment Alignment
 
-	MaxW int
-	MaxH int
-
-	currentPos Position
+	Position Position
+	Size     Size
 }
 
-func (layout *Layout) ComputeChildren() error {
-	if len(layout.ChildrenSize) == 0 {
-		return errors.New("no children to compute")
-	}
+type Next func(rl.Rectangle)
 
-	type Index = int
-	var remainingSize float32 = 0
+type Component func(avaliablePosition Position, next Next)
+
+func NewLayout(layout Layout, contrains rl.Rectangle) Layout {
+	layout.Position.X = contrains.X + layout.start
+	layout.Position.Y = contrains.Y + layout.top
+	layout.Position.Contrains = contrains
+	layout.Position.Contrains.Width -= (layout.Padding.start + layout.Padding.end)
+	layout.Position.Contrains.Height -= (layout.Padding.top + layout.Padding.bottom)
+
+	layout.Size.Width += (layout.Padding.start + layout.Padding.end)
+	layout.Size.Height += (layout.Padding.top + layout.Padding.bottom)
+	return layout
+}
+
+func (layout *Layout) Render(component Component) {
+	component(layout.Position, layout.Next)
+}
+
+func (layout *Layout) Next(component rl.Rectangle) {
 	switch layout.Direction {
 	case DIRECTION_ROW:
-		remainingSize = layout.Contrains.Width
+		// size
+		layout.Size.Width = layout.Size.Width + component.Width
+		layout.Size.Height = Max(layout.Size.Height, component.Height)
+
+		// position
+		layout.Position.X = layout.Position.X + component.Width + float32(layout.Gap)
 	case DIRECTION_COLUMN:
-		remainingSize = layout.Contrains.Height
+		// size
+		layout.Size.Height = layout.Size.Height + component.Height
+		layout.Size.Width = Max(layout.Size.Width, component.Width)
+
+		// positioN
+		layout.Position.Y = layout.Position.Y + component.Height + float32(layout.Gap)
 	}
-
-	var weightSum = 0
-	var weightSizes = make(map[Index]float32)
-	var computedSizes = make([]float32, len(layout.ChildrenSize))
-	for index, childSize := range layout.ChildrenSize {
-		value := childSize.Value
-		if childSize.SizeType == SIZE_WEIGHT {
-			weightSizes[index] = value
-			weightSum += int(value)
-			continue
-		}
-
-		computedSizes[index] = value
-		remainingSize -= value
-	}
-
-	if weightSum != 1 {
-		return errors.New("weight sum not equal to 1")
-	}
-
-	for index, weight := range weightSizes {
-		computedSizes[index] = float32(remainingSize) * weight
-	}
-
-	layout.ChildrenComputedSizes = computedSizes
-	return nil
 }
 
-func (layout *Layout) Current() rl.Rectangle {
-	currentRect := rl.Rectangle{X: float32(layout.currentPos.X), Y: float32(layout.currentPos.Y)}
-
-	if len(layout.ChildrenComputedSizes) > 0 {
-		switch layout.Direction {
-		case DIRECTION_ROW:
-			currentRect.Width = layout.ChildrenComputedSizes[layout.index]
-			currentRect.Height = layout.Contrains.Height
-		case DIRECTION_COLUMN:
-			currentRect.Height = layout.ChildrenComputedSizes[layout.index]
-			currentRect.Width = layout.Contrains.Width
-		}
-	} else {
-		switch layout.Direction {
-		case DIRECTION_ROW:
-			currentRect.Height = layout.Contrains.Height
-		case DIRECTION_COLUMN:
-			currentRect.Width = layout.Contrains.Width
-		}
-	}
-
-	return currentRect
-}
-func (layout *Layout) Next(position Position) {
-	layout.currentPos = position
-	layout.index++
-	layout.MaxW = Max(layout.MaxW, position.W)
-	layout.MaxH = Max(layout.MaxH, position.H)
-}
-
-func Max(value, max int) int {
+func Max(value, max float32) float32 {
 	if value < max {
 		return max
+	}
+
+	return value
+}
+
+func Min(value, min float32) float32 {
+	if value > min {
+		return min
 	}
 
 	return value
