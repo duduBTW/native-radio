@@ -37,7 +37,7 @@ func NewConstrainedLayout(layout ContrainedLayout) ContrainedLayout {
 	return layout
 }
 
-func (layout *ContrainedLayout) Render(component ContrainedComponent) {
+func (layout *ContrainedLayout) Render(component ContrainedComponent) rl.Rectangle {
 	targetRect := rl.Rectangle{X: layout.rect.X + layout.Padding.start + layout.Contrains.X, Y: layout.rect.Y + layout.Padding.top + layout.Contrains.Y}
 
 	switch layout.Direction {
@@ -49,7 +49,9 @@ func (layout *ContrainedLayout) Render(component ContrainedComponent) {
 		targetRect.Width = layout.Contrains.Width
 	}
 
-	component(targetRect)
+	if component != nil {
+		component(targetRect)
+	}
 
 	switch layout.Direction {
 	case DIRECTION_ROW:
@@ -61,6 +63,8 @@ func (layout *ContrainedLayout) Render(component ContrainedComponent) {
 	layout.rect.Width = targetRect.Width
 	layout.rect.Height = targetRect.Height
 	layout.index++
+
+	return targetRect
 }
 
 func (layout *ContrainedLayout) ComputeChildren() error {
@@ -77,14 +81,14 @@ func (layout *ContrainedLayout) ComputeChildren() error {
 		remainingSize = layout.Contrains.Height - layout.Gap*float32(len(layout.ChildrenSize)-1)
 	}
 
-	var weightSum = 0
+	var weightSum float32 = 0
 	var weightSizes = make(map[Index]float32)
 	var computedSizes = make([]float32, len(layout.ChildrenSize))
 	for index, childSize := range layout.ChildrenSize {
 		value := childSize.Value
 		if childSize.SizeType == SIZE_WEIGHT {
 			weightSizes[index] = value
-			weightSum += int(value)
+			weightSum += value
 			continue
 		}
 
@@ -92,7 +96,7 @@ func (layout *ContrainedLayout) ComputeChildren() error {
 		remainingSize -= value
 	}
 
-	if weightSum != 1 {
+	if weightSum > 1 {
 		return errors.New("weight sum not equal to 1")
 	}
 

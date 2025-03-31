@@ -64,6 +64,9 @@ type Position struct {
 	Contrains rl.Rectangle
 }
 
+func (position Position) ToVector2() rl.Vector2 {
+	return rl.NewVector2(position.X, position.Y)
+}
 func (position Position) ToRect(width, height float32) rl.Rectangle {
 	return rl.NewRectangle(position.X, position.Y, width, height)
 }
@@ -91,6 +94,7 @@ type Next func(rl.Rectangle)
 
 type Component func(avaliablePosition Position, next Next)
 
+// FIX-ME DIRECTION NON PASSED
 func NewLayout(layout Layout, contrains rl.Rectangle) Layout {
 	layout.Position.X = contrains.X + layout.start
 	layout.Position.Y = contrains.Y + layout.top
@@ -111,15 +115,15 @@ func (layout *Layout) Next(component rl.Rectangle) {
 	switch layout.Direction {
 	case DIRECTION_ROW:
 		// size
-		layout.Size.Width = layout.Size.Width + component.Width
-		layout.Size.Height = Max(layout.Size.Height, component.Height)
+		layout.Size.Width = layout.Size.Width + component.Width + float32(layout.Gap)
+		layout.Size.Height = Max(layout.Size.Height, component.Height+(layout.Padding.top+layout.Padding.bottom))
 
 		// position
 		layout.Position.X = layout.Position.X + component.Width + float32(layout.Gap)
 	case DIRECTION_COLUMN:
 		// size
-		layout.Size.Height = layout.Size.Height + component.Height
-		layout.Size.Width = Max(layout.Size.Width, component.Width)
+		layout.Size.Height = layout.Size.Height + component.Height + float32(layout.Gap)
+		layout.Size.Width = Max(layout.Size.Width, component.Width+(layout.Padding.start+layout.Padding.end))
 
 		// positioN
 		layout.Position.Y = layout.Position.Y + component.Height + float32(layout.Gap)
@@ -137,6 +141,37 @@ func Max(value, max float32) float32 {
 func Min(value, min float32) float32 {
 	if value > min {
 		return min
+	}
+
+	return value
+}
+
+func MinInt32(value, min int32) int32 {
+	if value > min {
+		return min
+	}
+
+	return value
+}
+func MinInt(value, min int) int {
+	if value > min {
+		return min
+	}
+
+	return value
+}
+
+func MaxInt32(value, max int32) int32 {
+	if value < max {
+		return max
+	}
+
+	return value
+}
+
+func MaxInt(value, max int) int {
+	if value < max {
+		return max
 	}
 
 	return value
