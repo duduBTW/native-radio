@@ -1,6 +1,19 @@
 package main
 
-import rl "github.com/gen2brain/raylib-go/raylib"
+import (
+	rl "github.com/gen2brain/raylib-go/raylib"
+)
+
+func ReadEncriptedTexture(originalFilePath string) (*rl.Texture2D, error) {
+	tempFilePath, cleanUp, err := ReadEncriptedFile("image.png", originalFilePath)
+	if err != nil {
+		return nil, err
+	}
+
+	texture := rl.LoadTexture(*tempFilePath)
+	(*cleanUp)()
+	return &texture, nil
+}
 
 func DrawFitImage(texture rl.Texture2D, target rl.Rectangle, color rl.Color) {
 	textureW := float32(texture.Width)

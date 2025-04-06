@@ -30,6 +30,17 @@ type UITextures struct {
 	Songs map[string]rl.Texture2D
 }
 
+type BlurShader struct {
+	Shader       rl.Shader
+	TexResLoc    int32
+	ScreenResLoc int32
+	MouseLoc     int32
+}
+
+type UIShaders struct {
+	Blur BlurShader
+}
+
 type UIStruct struct {
 	selectedSongindex  int
 	Music              rl.Music
@@ -42,7 +53,7 @@ type UIStruct struct {
 	ActiveId string
 	HotId    string
 
-	Songs []Song
+	Songs [30]Song
 
 	seekModeProgress     float32
 	isSkeekMode          bool
@@ -115,9 +126,19 @@ func (ui UIStruct) SelectedSong() Song {
 
 func (ui *UIStruct) SelectSong(songIndex int) {
 	ui.selectedSongindex = songIndex
+
+	texture := UI.SelectedSongTexture()
+	rl.SetShaderValue(Shaders.Blur.Shader, Shaders.Blur.TexResLoc, []float32{float32(texture.Width), float32(texture.Height)}, rl.ShaderUniformVec2)
+
+	musicPath, err := ReadEncriptedMusic(ui.SelectedSong().FileName)
+	if err != nil {
+		panic(1)
+	}
+
 	rl.UnloadMusicStream(UI.Music)
-	ui.Music = rl.LoadMusicStream(ui.SelectedSong().FileName)
+	ui.Music = *musicPath
 	ui.Music.Looping = false
+
 }
 
 func (ui UIStruct) SelectedSongTexture() rl.Texture2D {
@@ -132,26 +153,49 @@ var UI = UIStruct{}
 var Textures = UITextures{
 	Songs: make(map[string]rl.Texture2D),
 }
+var Shaders = UIShaders{}
 
 func LoadTextures(songs SongTable) {
 	for _, song := range songs.Songs {
-		Textures.Songs[song.FileName] = rl.LoadTexture(song.Background)
+		texture, err := ReadEncriptedTexture(song.Background)
+		if err != nil {
+			continue
+		}
+		Textures.Songs[song.FileName] = *texture
 	}
-	Textures.Icons = rl.LoadTexture("/Users/carloseduardoalvesdonascimento/Personal/osu-song-native/sprites/icon-sprite.png")
+	Textures.Icons = rl.LoadTexture("D:\\Peronal\\native-radio\\sprites\\icon-sprite.png")
+}
+
+func LoadShaders() {
+	shader := rl.LoadShader("", "D:\\Peronal\\native-radio\\shaders\\blur.fs")
+	blur := BlurShader{
+		Shader:       shader,
+		TexResLoc:    rl.GetShaderLocation(shader, "textureResolution"),
+		ScreenResLoc: rl.GetShaderLocation(shader, "resolution"),
+		MouseLoc:     rl.GetShaderLocation(shader, "mouse"),
+	}
+
+	blurRadiusLoc := rl.GetShaderLocation(shader, "blurRadius")
+	var blurRadius float32 = 150
+	rl.SetShaderValue(shader, blurRadiusLoc, []float32{blurRadius}, rl.ShaderUniformFloat)
+
+	Shaders.Blur = blur
 }
 
 func InitEverything() {
 	// Songs
 	var songTable = SongTable{}
-	songTable.FromJson("/Users/carloseduardoalvesdonascimento/Personal/osu-song-native/songs.json")
+	songTable.FromJson(("C:\\Users\\carlo\\AppData\\Roaming\\osu-radio\\storage\\songs.json"))
 	UI.Songs = songTable.Songs
 	UI.SelectedPanelPage = PANEL_PAGE_SONGS
 
-	// Textures
 	LoadTextures(songTable)
+	LoadShaders()
 
 	UI.SelectSong(0)
 }
+
+var MousePoint = rl.Vector2{} // FIX-ME REMOVE DAMN GLOBAL
 
 func main() {
 	go func() {
@@ -166,7 +210,7 @@ func main() {
 	defer rl.CloseWindow()
 
 	rl.InitAudioDevice()
-	rl.SetTargetFPS(60)
+	rl.SetTargetFPS(165)
 
 	InitEverything()
 
@@ -181,6 +225,10 @@ func main() {
 
 		UI.ScreenW = int32(rl.GetScreenWidth())
 		UI.ScreenH = int32(rl.GetScreenHeight())
+		MousePoint = rl.GetMousePosition()
+
+		rl.SetShaderValue(Shaders.Blur.Shader, Shaders.Blur.ScreenResLoc, []float32{float32(UI.ScreenW), float32(UI.ScreenH)}, rl.ShaderUniformVec2)
+		rl.SetShaderValue(Shaders.Blur.Shader, Shaders.Blur.MouseLoc, []float32{MousePoint.X, float32(UI.ScreenH) - MousePoint.Y}, rl.ShaderUniformVec2)
 
 		rl.BeginDrawing()
 		rl.ClearBackground(rl.RayWhite)
@@ -191,10 +239,6 @@ func main() {
 		case PAGE_SETUP_WIZARD:
 			SetupWizardPage()
 		}
-
-		// if rl.IsMouseButtonReleased(rl.MouseLeftButton) {
-		// 	UI.ActiveId = ""
-		// }
 
 		rl.DrawFPS(10, 10)
 		rl.EndDrawing()

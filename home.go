@@ -4,14 +4,16 @@ import (
 	rl "github.com/gen2brain/raylib-go/raylib"
 )
 
-var MousePoint = rl.Vector2{} // FIX-ME REMOVE DAMN GLOBAL
-var scrollSpeed = 4
+var scrollSpeed = 40
 
 func HomePage() {
-	MousePoint = rl.GetMousePosition()
 
 	if UI.HasSelectedSong() {
+		rl.BeginShaderMode(Shaders.Blur.Shader)
 		DrawFitImage(UI.SelectedSongTexture(), rl.NewRectangle(0, 0, float32(UI.ScreenW), float32(UI.ScreenH)), rl.Gray)
+		rl.EndShaderMode()
+
+		rl.DrawRectangle(0, 0, UI.ScreenW, UI.ScreenH, rl.NewColor(18, 18, 18, 209))
 	}
 
 	padding := Padding{}
@@ -20,7 +22,7 @@ func HomePage() {
 		Direction: DIRECTION_ROW,
 		Padding:   padding,
 		ChildrenSize: []ChildSize{
-			{SizeType: SIZE_ABSOLUTE, Value: 440},
+			{SizeType: SIZE_ABSOLUTE, Value: 520},
 			{SizeType: SIZE_WEIGHT, Value: 1},
 		},
 	})
