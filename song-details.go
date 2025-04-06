@@ -7,6 +7,13 @@ import (
 )
 
 func SongDetails(rect rl.Rectangle) {
+	originalRect := rect.Width
+	rect.Width = Min(1000, rect.Width)
+
+	if originalRect != rect.Width {
+		rect.X += (originalRect - rect.Width) / 2
+	}
+
 	padding := Padding{}
 	padding.All(94)
 	var container = NewConstrainedLayout(ContrainedLayout{
@@ -28,9 +35,13 @@ func SongMiniature(rect rl.Rectangle) {
 	if !UI.HasSelectedSong() {
 		return
 	}
+	rl.BeginShaderMode(Shaders.Shadow)
 
-	var size float32 = 300
-	DrawFitImage(UI.SelectedSongTexture(), rl.NewRectangle(rect.X+((rect.Width-size)/2), rect.Y+((rect.Height-size)/2), size, size), rl.White)
+	var size float32 = 350
+	x := int32(rect.X + ((rect.Width - size) / 2))
+	y := int32(rect.Y + ((rect.Height - size) / 2))
+	rl.DrawTexture(*UI.SelectedSongMiniature(), x, y, rl.White)
+	rl.EndShaderMode()
 }
 
 func SongControls(rect rl.Rectangle) {
@@ -189,7 +200,7 @@ func SongControlTexts(position Position, next Next) {
 	container.Render(SongControlText(UI.SelectedSong().Title, 28))
 	container.Render(SongControlText(UI.SelectedSong().Artist, 16))
 
-	// FIXME - Getting the height of children aftre, is this ok? prob not right, at least it is weird rn
+	// FIXME - Getting the height of children after, is this ok? prob not right, at least it is weird rn
 	next(position.ToRect(position.Contrains.Width, container.Size.Height))
 }
 

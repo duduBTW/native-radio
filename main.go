@@ -26,8 +26,9 @@ const (
 )
 
 type UITextures struct {
-	Icons rl.Texture2D
-	Songs map[string]rl.Texture2D
+	Icons      rl.Texture2D
+	Songs      map[string]rl.Texture2D
+	Miniatures map[string](*rl.Texture2D)
 }
 
 type BlurShader struct {
@@ -38,7 +39,8 @@ type BlurShader struct {
 }
 
 type UIShaders struct {
-	Blur BlurShader
+	Blur   BlurShader
+	Shadow rl.Shader
 }
 
 type UIStruct struct {
@@ -144,15 +146,16 @@ func (ui *UIStruct) SelectSong(songIndex int) {
 func (ui UIStruct) SelectedSongTexture() rl.Texture2D {
 	return Textures.Songs[ui.SelectedSong().FileName]
 }
+func (ui UIStruct) SelectedSongMiniature() *rl.Texture2D {
+	return Textures.Miniatures[ui.SelectedSong().FileName]
+}
 
 func (ui UIStruct) HasSelectedSong() bool {
 	return ui.SelectedSong().FileName != ""
 }
 
 var UI = UIStruct{}
-var Textures = UITextures{
-	Songs: make(map[string]rl.Texture2D),
-}
+var Textures = UITextures{}
 var Shaders = UIShaders{}
 
 func LoadTextures(songs SongTable) {
@@ -162,11 +165,22 @@ func LoadTextures(songs SongTable) {
 			continue
 		}
 		Textures.Songs[song.FileName] = *texture
+
+		m, err := GenerateImage(song.Background, "D:\\Peronal\\native-radio\\masks\\miniature.png", Size{Width: 350, Height: 350}, rl.White)
+		if err != nil {
+			panic(1)
+		}
+
+		Textures.Miniatures[song.FileName] = m
 	}
 	Textures.Icons = rl.LoadTexture("D:\\Peronal\\native-radio\\sprites\\icon-sprite.png")
 }
 
 func LoadShaders() {
+	// Shadow
+	Shaders.Shadow = rl.LoadShader("", "D:\\Peronal\\native-radio\\shaders\\shadow.fs")
+
+	// Blur
 	shader := rl.LoadShader("", "D:\\Peronal\\native-radio\\shaders\\blur.fs")
 	blur := BlurShader{
 		Shader:       shader,
@@ -178,7 +192,6 @@ func LoadShaders() {
 	blurRadiusLoc := rl.GetShaderLocation(shader, "blurRadius")
 	var blurRadius float32 = 150
 	rl.SetShaderValue(shader, blurRadiusLoc, []float32{blurRadius}, rl.ShaderUniformFloat)
-
 	Shaders.Blur = blur
 }
 
@@ -189,10 +202,14 @@ func InitEverything() {
 	UI.Songs = songTable.Songs
 	UI.SelectedPanelPage = PANEL_PAGE_SONGS
 
+	Textures.Songs = make(map[string]rl.Texture2D, len(songTable.Songs))
+	Textures.Miniatures = make(map[string]*rl.Texture2D, len(songTable.Songs))
+
 	LoadTextures(songTable)
 	LoadShaders()
 
 	UI.SelectSong(0)
+
 }
 
 var MousePoint = rl.Vector2{} // FIX-ME REMOVE DAMN GLOBAL
