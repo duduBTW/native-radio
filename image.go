@@ -37,6 +37,7 @@ func GenerateImage(filePath string, maskPath string, size Size, color rl.Color) 
 	rl.ImageResize(image, int32(size.Width), int32(size.Height))
 	rl.ImageAlphaMask(image, mask)
 	texture := rl.LoadTextureFromImage(image)
+	rl.UnloadImage(image)
 	return &texture, nil
 }
 

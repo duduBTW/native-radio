@@ -26,9 +26,9 @@ const (
 )
 
 type UITextures struct {
-	Icons      rl.Texture2D
-	Songs      map[string]rl.Texture2D
-	Miniatures map[string](*rl.Texture2D)
+	Icons        rl.Texture2D
+	SelectedSong *rl.Texture2D
+	Miniature    *rl.Texture2D
 }
 
 type BlurShader struct {
@@ -55,7 +55,7 @@ type UIStruct struct {
 	ActiveId string
 	HotId    string
 
-	Songs [30]Song
+	Songs []Song
 
 	seekModeProgress     float32
 	isSkeekMode          bool
@@ -127,10 +127,8 @@ func (ui UIStruct) SelectedSong() Song {
 }
 
 func (ui *UIStruct) SelectSong(songIndex int) {
-	ui.selectedSongindex = songIndex
 
-	texture := UI.SelectedSongTexture()
-	rl.SetShaderValue(Shaders.Blur.Shader, Shaders.Blur.TexResLoc, []float32{float32(texture.Width), float32(texture.Height)}, rl.ShaderUniformVec2)
+	ui.selectedSongindex = songIndex
 
 	musicPath, err := ReadEncriptedMusic(ui.SelectedSong().FileName)
 	if err != nil {
@@ -141,13 +139,37 @@ func (ui *UIStruct) SelectSong(songIndex int) {
 	ui.Music = *musicPath
 	ui.Music.Looping = false
 
+	background := ui.SelectedSong().Background
+
+	// Regular texture
+	previusTexture := Textures.SelectedSong
+	if previusTexture != nil {
+		rl.UnloadTexture(*previusTexture)
+	}
+	texture, err := ReadEncriptedTexture(background)
+	if err != nil {
+		panic(1)
+	}
+	rl.SetShaderValue(Shaders.Blur.Shader, Shaders.Blur.TexResLoc, []float32{float32(texture.Width), float32(texture.Height)}, rl.ShaderUniformVec2)
+	Textures.SelectedSong = texture
+
+	// Miniature
+	previusMiniatureTexture := Textures.Miniature
+	if previusMiniatureTexture != nil {
+		rl.UnloadTexture(*previusMiniatureTexture)
+	}
+	m, err := GenerateImage(background, "D:\\Peronal\\native-radio\\masks\\miniature.png", Size{Width: 350, Height: 350}, rl.White)
+	if err != nil {
+		panic(1)
+	}
+	Textures.Miniature = m
 }
 
 func (ui UIStruct) SelectedSongTexture() rl.Texture2D {
-	return Textures.Songs[ui.SelectedSong().FileName]
+	return *Textures.SelectedSong
 }
 func (ui UIStruct) SelectedSongMiniature() *rl.Texture2D {
-	return Textures.Miniatures[ui.SelectedSong().FileName]
+	return Textures.Miniature
 }
 
 func (ui UIStruct) HasSelectedSong() bool {
@@ -159,20 +181,19 @@ var Textures = UITextures{}
 var Shaders = UIShaders{}
 
 func LoadTextures(songs SongTable) {
-	for _, song := range songs.Songs {
-		texture, err := ReadEncriptedTexture(song.Background)
-		if err != nil {
-			continue
-		}
-		Textures.Songs[song.FileName] = *texture
+	// for _, song := range songs.Songs {
+	// 	texture, err := ReadEncriptedTexture(song.Background)
+	// 	if err != nil {
+	// 		continue
+	// 	}
+	// 	Textures.Songs[song.FileName] = *texture
 
-		m, err := GenerateImage(song.Background, "D:\\Peronal\\native-radio\\masks\\miniature.png", Size{Width: 350, Height: 350}, rl.White)
-		if err != nil {
-			panic(1)
-		}
-
-		Textures.Miniatures[song.FileName] = m
-	}
+	// m, err := GenerateImage(song.Background, "D:\\Peronal\\native-radio\\masks\\miniature.png", Size{Width: 350, Height: 350}, rl.White)
+	// if err != nil {
+	// 	panic(1)
+	// }
+	// Textures.Miniatures[song.FileName] = m
+	// }
 	Textures.Icons = rl.LoadTexture("D:\\Peronal\\native-radio\\sprites\\icon-sprite.png")
 }
 
@@ -190,7 +211,7 @@ func LoadShaders() {
 	}
 
 	blurRadiusLoc := rl.GetShaderLocation(shader, "blurRadius")
-	var blurRadius float32 = 150
+	var blurRadius float32 = 200
 	rl.SetShaderValue(shader, blurRadiusLoc, []float32{blurRadius}, rl.ShaderUniformFloat)
 	Shaders.Blur = blur
 }
@@ -201,9 +222,6 @@ func InitEverything() {
 	songTable.FromJson(("C:\\Users\\carlo\\AppData\\Roaming\\osu-radio\\storage\\songs.json"))
 	UI.Songs = songTable.Songs
 	UI.SelectedPanelPage = PANEL_PAGE_SONGS
-
-	Textures.Songs = make(map[string]rl.Texture2D, len(songTable.Songs))
-	Textures.Miniatures = make(map[string]*rl.Texture2D, len(songTable.Songs))
 
 	LoadTextures(songTable)
 	LoadShaders()
@@ -223,7 +241,7 @@ func main() {
 
 	rl.SetConfigFlags(rl.FlagWindowResizable)
 	rl.SetConfigFlags(rl.FlagBorderlessWindowedMode)
-	rl.InitWindow(800, 600, "raylib [core] example - basic window")
+	rl.InitWindow(1280, 720, "raylib [core] example - basic window")
 	defer rl.CloseWindow()
 
 	rl.InitAudioDevice()

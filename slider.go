@@ -15,7 +15,7 @@ const (
 type Thumb struct {
 	Size      Size
 	Offset    rl.Vector2
-	Roundness float32
+	Roundness Roundness
 }
 
 type SliderState struct {
@@ -67,7 +67,7 @@ type SliderProps struct {
 	Value        float32
 	Rect         rl.Rectangle
 	Padding      float32
-	BorderRadius float32
+	BorderRadius Roundness
 	Thumb        Thumb
 	Color        rl.Color
 }
@@ -75,9 +75,8 @@ type SliderProps struct {
 func Slider(slider SliderProps) float32 {
 	SliderEventHandler(slider)
 	state := SliderStateHandler(slider)
-	rl.DrawRectangleRounded(slider.Rect, slider.BorderRadius, 0, rl.Fade(rl.Black, 0.8))
+	DrawRectangleRoundedPixels(slider.Rect, slider.BorderRadius, rl.Fade(rl.Black, 0.8))
 
-	var segments int32 = 8
 	totalProgressRect, valueWidth := SliderValue(slider)
 	progressRect := rl.Rectangle{
 		X:      slider.Rect.X + slider.Padding,
@@ -88,7 +87,7 @@ func Slider(slider SliderProps) float32 {
 
 	var rectInt32 = slider.Rect.ToInt32()
 	rl.BeginScissorMode(rectInt32.X+3, rectInt32.Y, int32(valueWidth), int32(slider.Rect.Height))
-	rl.DrawRectangleRounded(progressRect, slider.BorderRadius, segments, slider.Color)
+	DrawRectangleRoundedPixels(progressRect, slider.BorderRadius-slider.Padding, slider.Color)
 	rl.EndScissorMode()
 
 	thumbColor := rl.DarkGray
@@ -100,7 +99,7 @@ func Slider(slider SliderProps) float32 {
 	}
 
 	thumbRect := SliderThumbRect(slider)
-	rl.DrawRectangleRounded(thumbRect, slider.Thumb.Roundness, segments, thumbColor)
+	DrawRectangleRoundedPixels(thumbRect, slider.Thumb.Roundness, thumbColor)
 
 	newValue := SliderValueHanlder(slider)
 	return newValue

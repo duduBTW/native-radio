@@ -7,7 +7,6 @@ import (
 var scrollSpeed = 40
 
 func HomePage() {
-
 	if UI.HasSelectedSong() {
 		rl.BeginShaderMode(Shaders.Blur.Shader)
 		DrawFitImage(UI.SelectedSongTexture(), rl.NewRectangle(0, 0, float32(UI.ScreenW), float32(UI.ScreenH)), rl.Gray)
@@ -143,18 +142,26 @@ func SongList() ContrainedComponent {
 	}
 }
 
+var titleHeight float32 = 30
+var artistHeight float32 = 21
+
 func SongCard(song Song, index int) Component {
 	return func(position Position, next Next) {
+		var height float32 = 72
+		var rect = position.ToRect(position.Contrains.Width, height)
+
 		padding := Padding{}
 		padding.Axis(20, 16)
-		cardContent := NewLayout(Layout{
+		cardContent := NewConstrainedLayout(ContrainedLayout{
 			Direction: DIRECTION_COLUMN,
 			Padding:   padding,
-		}, position.ToRect(position.Contrains.Width, position.Contrains.Height))
-		cardContent.Render(SongCardText(song.Title, 20))
-		cardContent.Render(SongCardText(song.Artist, 14))
+			Contrains: rect,
+			ChildrenSize: []ChildSize{
+				{SizeType: SIZE_ABSOLUTE, Value: titleHeight},
+				{SizeType: SIZE_ABSOLUTE, Value: artistHeight},
+			},
+		})
 
-		var rect = position.ToRect(position.Contrains.Width, cardContent.Size.Height)
 		var id = "song-card" + song.FileName
 
 		// -- BURN WITH FIRE
@@ -184,32 +191,25 @@ func SongCard(song Song, index int) Component {
 			buttonColor = rl.Fade(rl.Black, 0.2)
 		}
 		// ----------------
-
-		DrawFitImage(Textures.Songs[song.FileName], rect, rl.White)
+		// FIXME
+		// DrawFitImage(Textures.Songs[song.FileName], rect, rl.White)
 		rl.DrawRectanglePro(rect, rl.Vector2{}, 0, buttonColor)
 
 		if isSelected {
 			rl.DrawRectangleRoundedLinesEx(rect, 0, 0, 2, rl.White)
 		}
 
-		// FIXME: FIGURE OUT A BETTER WAY TO DO THIS
-		// WE ARE RENDERING AGAIN ON TOP OF THE RECT WITH THE SAME POSITION NOW
-		cardContent2 := NewLayout(Layout{
-			Direction: DIRECTION_COLUMN,
-			Padding:   padding,
-		}, position.ToRect(position.Contrains.Width, position.Contrains.Height))
-		cardContent2.Render(SongCardText(song.Title, 20))
-		cardContent2.Render(SongCardText(song.Artist, 14))
+		cardContent.Render(SongCardText(song.Title, 20))
+		cardContent.Render(SongCardText(song.Artist, 14))
 
 		next(rect)
 	}
 }
 
-func SongCardText(text string, fontSize float32) Component {
-	return func(position Position, next Next) {
+func SongCardText(text string, fontSize float32) ContrainedComponent {
+	return func(rect rl.Rectangle) {
 		font := rl.GetFontDefault()
-		textHeight := DrawTextByWidth(font, text, rl.NewVector2(position.X, position.Y), position.Contrains.Width, fontSize, 2, rl.White)
-		next(position.ToRect(position.Contrains.Width, textHeight))
+		rl.DrawTextEx(font, text, rl.NewVector2(rect.X, rect.Y), fontSize, 2, rl.White)
 	}
 }
 

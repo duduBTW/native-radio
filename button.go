@@ -12,8 +12,7 @@ const (
 
 type ButtonStyle struct {
 	Color        rl.Color
-	BorderRadius float32
-	segments     int32
+	BorderRadius Roundness
 }
 type ButtonStyles = map[InteractableState]ButtonStyle
 
@@ -22,7 +21,7 @@ func Button(id string, buttonRect rl.Rectangle, styles ButtonStyles) bool {
 	state := ButtonStateHandler(id, buttonRect)
 
 	style := styles[state]
-	rl.DrawRectangleRounded(buttonRect, style.BorderRadius, style.segments, style.Color)
+	DrawRectangleRoundedPixels(buttonRect, style.BorderRadius, style.Color)
 	return clicked
 }
 

@@ -35,8 +35,13 @@ func SongMiniature(rect rl.Rectangle) {
 	if !UI.HasSelectedSong() {
 		return
 	}
-	rl.BeginShaderMode(Shaders.Shadow)
 
+	miniature := UI.SelectedSongMiniature()
+	if miniature == nil {
+		return
+	}
+
+	rl.BeginShaderMode(Shaders.Shadow)
 	var size float32 = 350
 	x := int32(rect.X + ((rect.Width - size) / 2))
 	y := int32(rect.Y + ((rect.Height - size) / 2))
@@ -51,7 +56,7 @@ func SongControls(rect rl.Rectangle) {
 	}, rect)
 
 	container.Render(SongControlTexts)
-	container.Render(SongPorgress)
+	container.Render(SongProgress)
 	container.Render(SongControlButton)
 }
 
@@ -66,7 +71,7 @@ func durationFromSeconds(seconds int) string {
 	return minutes + ":" + resultSeconds
 }
 
-func SongPorgress(position Position, next Next) {
+func SongProgress(position Position, next Next) {
 	if !UI.HasSelectedSong() {
 		return
 	}
@@ -79,7 +84,7 @@ func SongPorgress(position Position, next Next) {
 		Value:        UI.Progress(),
 		Rect:         rect,
 		Padding:      4,
-		BorderRadius: 0.6,
+		BorderRadius: ROUNDED,
 		Thumb: Thumb{
 			Size: Size{
 				Width:  6,
@@ -89,7 +94,7 @@ func SongPorgress(position Position, next Next) {
 				X: 0,
 				Y: 4,
 			},
-			Roundness: 1,
+			Roundness: 3,
 		},
 		Color: rl.Pink,
 		Id:    "progress-slider",

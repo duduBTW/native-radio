@@ -14,7 +14,7 @@ type Song struct {
 }
 
 type SongTable struct {
-	Songs [30]Song
+	Songs []Song
 }
 
 func (songTable *SongTable) FromJson(filename string) (*SongTable, error) {
@@ -29,13 +29,9 @@ func (songTable *SongTable) FromJson(filename string) (*SongTable, error) {
 		return songTable, err
 	}
 
-	var songs [30]Song
+	var songs = make([]Song, len(songMap))
 	var i = 0
 	for fileName, song := range songMap {
-		if i > 29 {
-			break
-		}
-
 		songs[i] = song
 		songs[i].FileName = fileName
 		i++
