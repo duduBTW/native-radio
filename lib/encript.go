@@ -1,56 +1,76 @@
 package lib
 
 import (
-	"fmt"
+	"net/http"
 	"os"
-	"strconv"
-	"time"
 
 	rl "github.com/gen2brain/raylib-go/raylib"
 )
 
 func ReadEncriptedTexture(originalFilePath string) (*rl.Texture2D, error) {
-	tempFilePath, cleanUp, err := ReadEncriptedFile("image.png", originalFilePath, true)
+	image, err := ReadEncriptedImage(originalFilePath)
 	if err != nil {
 		return nil, err
 	}
 
-	texture := rl.LoadTexture(*tempFilePath)
-	(*cleanUp)()
+	texture := rl.LoadTextureFromImage(image)
+	rl.UnloadImage(image)
 	return &texture, nil
 }
 
+func detectImageFormat(data []byte) string {
+	contentType := http.DetectContentType(data)
+
+	switch contentType {
+	case "image/png":
+		return ".png"
+	case "image/jpeg":
+		return ".jpg"
+	case "image/gif":
+		return ".gif"
+	default:
+		// Fallback to png
+		return ".png"
+	}
+}
+
 func ReadEncriptedImage(originalFilePath string) (*rl.Image, error) {
-	tempFilePath, cleanUp, err := ReadEncriptedFile("image.png", originalFilePath, true)
+	imageBytes, err := os.ReadFile(originalFilePath)
 	if err != nil {
 		return nil, err
 	}
 
-	fmt.Print("temp", tempFilePath)
-	image := rl.LoadImage(*tempFilePath)
-	(*cleanUp)()
+	imageFormat := detectImageFormat(imageBytes)
+	image := rl.LoadImageFromMemory(imageFormat, imageBytes, int32(len(imageBytes)))
 	return image, nil
 }
 
-// This is kinda dumb but the easy way I found for raylib to detect the files with a sha256 name.
-func ReadEncriptedFile(tempFile string, originalFilePath string, random bool) (*string, *func(), error) {
-	fileData, err := os.ReadFile(originalFilePath)
+func detectAudioFormat(data []byte) string {
+	contentType := http.DetectContentType(data)
+	switch contentType {
+	case "audio/mpeg":
+		return ".mp3"
+	case "audio/wav":
+		return ".wav"
+	case "audio/ogg":
+		return ".ogg"
+	default:
+		// Fallback to mp3
+		return ".mp3"
+	}
+}
+
+// keep the bytes alive
+var bytes []byte
+
+func ReadEncriptedMusic(originalFilePath string) (*rl.Music, error) {
+	musicBytes, err := os.ReadFile(originalFilePath)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
-	tempFilePath := "D:\\Peronal\\native-radio\\temp\\"
-	if random {
-		tempFilePath += strconv.Itoa(int(time.Now().UnixMilli()))
-	}
-	tempFilePath += tempFile
-
-	if err := os.WriteFile(tempFilePath, fileData, 0644); err != nil {
-		return nil, nil, err
-	}
-	cleanUp := func() {
-		fmt.Println("Cleaning up")
-		os.Remove(tempFilePath)
-	}
-	return &tempFilePath, &cleanUp, nil
+	audioFormat := detectAudioFormat(musicBytes)
+	bytes = musicBytes
+	loadedMusic := rl.LoadMusicStreamFromMemory(audioFormat, musicBytes, int32(len(musicBytes)))
+	return &loadedMusic, nil
 }

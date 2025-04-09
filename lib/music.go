@@ -13,18 +13,19 @@ type Music struct {
 	seekModeProgress     float32
 }
 
-func (music *Music) LoadMusic(table *SongTable) {
-	musicPath, err := ReadEncriptedMusic(table.SelectedSong().FileName)
-	if err != nil {
-		panic(1)
-	}
-
+func (music *Music) LoadMusic(table *SongTable) error {
 	if music.Selected != nil {
 		rl.UnloadMusicStream(*music.Selected)
 	}
 
-	music.Selected = musicPath
+	loadedMusic, err := ReadEncriptedMusic(table.SelectedSong().FileName)
+	if err != nil {
+		return err
+	}
+
+	music.Selected = loadedMusic
 	music.Selected.Looping = false
+	return nil
 }
 
 func (music *Music) BeginSeekMode() {
@@ -75,7 +76,7 @@ func (music *Music) Progress() float32 {
 		return music.seekModeProgress
 	}
 
-	fmt.Println(music.Selected, rl.GetMusicTimePlayed(*music.Selected), rl.GetMusicTimeLength(*music.Selected))
+	// fmt.Println(music.Selected, rl.GetMusicTimePlayed(*music.Selected), rl.GetMusicTimeLength(*music.Selected))
 	return rl.GetMusicTimePlayed(*music.Selected) / rl.GetMusicTimeLength(*music.Selected)
 }
 
@@ -90,15 +91,4 @@ func (music *Music) HasEnded() bool {
 
 	// TODO deal with ms, since we are doing int() it only compare seconds
 	return int(rl.GetMusicTimePlayed(*music.Selected)) == int(rl.GetMusicTimeLength(*music.Selected))
-}
-
-func ReadEncriptedMusic(originalFilePath string) (*rl.Music, error) {
-	tempFilePath, _, err := ReadEncriptedFile("music.mp3", originalFilePath, false)
-	if err != nil {
-		return nil, err
-	}
-
-	music := rl.LoadMusicStream(*tempFilePath)
-	// (*cleanUp)()
-	return &music, nil
 }

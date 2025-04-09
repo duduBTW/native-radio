@@ -42,6 +42,14 @@ func (textures *Textures) SetSongLoading(isLoading bool) {
 	textures.SongsLoading = isLoading
 }
 
+func (textures *Textures) Unload(texture *rl.Texture2D) {
+	if texture == nil {
+		return
+	}
+
+	rl.UnloadTexture(*texture)
+}
+
 func (textures *Textures) LoadIcon() {
 	iconTexture := rl.LoadTexture("D:\\Peronal\\native-radio\\sprites\\icon-sprite.png")
 	textures.Icons = &iconTexture
@@ -114,16 +122,13 @@ func (textures *Textures) UnloadSongCard(song Song) {
 
 func (textures *Textures) LoadSelectedSong(table SongTable, shaders Shaders) {
 	selectedSong := table.SelectedSong()
-
 	textures.LoadSongBackground(selectedSong, shaders)
 	textures.LoadSongMiniature(selectedSong)
 }
 
 func (textures *Textures) LoadSongBackground(song Song, shaders Shaders) {
-	previusTexture := textures.SelectedSong
-	if previusTexture != nil {
-		rl.UnloadTexture(*previusTexture)
-	}
+	textures.Unload(textures.SelectedSong)
+
 	texture, err := ReadEncriptedTexture(song.Background)
 	if err != nil {
 		panic(1)
@@ -134,10 +139,7 @@ func (textures *Textures) LoadSongBackground(song Song, shaders Shaders) {
 }
 
 func (textures *Textures) LoadSongMiniature(song Song) {
-	previusMiniatureTexture := textures.Miniature
-	if previusMiniatureTexture != nil {
-		rl.UnloadTexture(*previusMiniatureTexture)
-	}
+	textures.Unload(textures.Miniature)
 
 	texture, err := GenerateTexture(song.Background, "D:\\Peronal\\native-radio\\masks\\miniature.png", rl.NewVector2(STYLE_MINIATURE_SIZE, STYLE_MINIATURE_SIZE), rl.White)
 	if err != nil {
