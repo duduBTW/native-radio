@@ -34,7 +34,7 @@ func DrawIcon(name IconName, position rl.Vector2) {
 		Width:  ICON_SIZE,
 		Height: ICON_SIZE,
 	}
-	rl.DrawTexturePro(Textures.Icons, posOnSprite, rl.NewRectangle(position.X, position.Y, ICON_SIZE, ICON_SIZE), rl.Vector2{}, 0, rl.White)
+	rl.DrawTexturePro(*Textures.Icons, posOnSprite, rl.NewRectangle(position.X, position.Y, ICON_SIZE, ICON_SIZE), rl.Vector2{}, 0, rl.White)
 }
 
 type IconButtonVariant = int8

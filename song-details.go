@@ -32,11 +32,11 @@ func SongDetails(rect rl.Rectangle) {
 }
 
 func SongMiniature(rect rl.Rectangle) {
-	if !UI.HasSelectedSong() {
+	if !SongTable.HasSelectedSong() {
 		return
 	}
 
-	miniature := UI.SelectedSongMiniature()
+	miniature := Textures.Miniature
 	if miniature == nil {
 		return
 	}
@@ -45,7 +45,7 @@ func SongMiniature(rect rl.Rectangle) {
 	var size float32 = 350
 	x := int32(rect.X + ((rect.Width - size) / 2))
 	y := int32(rect.Y + ((rect.Height - size) / 2))
-	rl.DrawTexture(*UI.SelectedSongMiniature(), x, y, rl.White)
+	rl.DrawTexture(*miniature, x, y, rl.White)
 	rl.EndShaderMode()
 }
 
@@ -72,16 +72,15 @@ func durationFromSeconds(seconds int) string {
 }
 
 func SongProgress(position Position, next Next) {
-	if !UI.HasSelectedSong() {
+	if !SongTable.HasSelectedSong() {
 		return
 	}
 
 	rect := position.ToRect(position.Contrains.Width, 28)
 	rectInt32 := rect.ToInt32()
 
-	music := UI.Music
 	sliderProps := SliderProps{
-		Value:        UI.Progress(),
+		Value:        music.Progress(),
 		Rect:         rect,
 		Padding:      4,
 		BorderRadius: ROUNDED,
@@ -102,19 +101,19 @@ func SongProgress(position Position, next Next) {
 	newSliderValue := Slider(sliderProps)
 
 	if IsItemActivated() {
-		UI.BeginSeekMode()
+		music.BeginSeekMode()
 	}
 
 	if IsItemDeactivatedAfterEdit() {
-		UI.ExitSeekMode()
+		music.ExitSeekMode()
 	}
 
 	if IsActive() {
-		UI.Seek(newSliderValue)
+		music.Seek(newSliderValue)
 	}
 
 	thumbRect := SliderThumbRect(sliderProps)
-	progressSecongs := int(rl.GetMusicTimeLength(music) * sliderProps.Value)
+	progressSecongs := int(rl.GetMusicTimeLength(*music.Selected) * sliderProps.Value)
 	thumbRectInt := thumbRect.ToInt32()
 	progressText := durationFromSeconds(progressSecongs)
 	var progressFontSize int32 = 14
@@ -128,7 +127,7 @@ func SongProgress(position Position, next Next) {
 		rl.White,
 	)
 
-	totalText := durationFromSeconds(int(rl.GetMusicTimeLength(music)))
+	totalText := durationFromSeconds(int(rl.GetMusicTimeLength(*music.Selected)))
 	var totalTextX int32 = rectInt32.X + rectInt32.Width - rl.MeasureText(totalText, progressFontSize) - progressTextPaddingHorizontal
 	const hideTOtalTextOffset int32 = 4
 	if totalTextX > thumbRectInt.X+thumbRectInt.Width+hideTOtalTextOffset {
@@ -162,7 +161,7 @@ func SongControlButton(position Position, next Next) {
 
 	offsetTop := (rect.Height - ICON_BUTTON_SIZE_GHOST) / 2
 
-	isPlaying := rl.IsMusicStreamPlaying(UI.Music)
+	isPlaying := rl.IsMusicStreamPlaying(*music.Selected)
 
 	var ghostWithOffset = func(iconRect rl.Rectangle) rl.Rectangle {
 		iconRect.Y += offsetTop
@@ -170,7 +169,8 @@ func SongControlButton(position Position, next Next) {
 	}
 
 	if IconButton("c-play2", ICON_PLAYER_PREVIOUS, ICON_BUTTON_GHOST, ghostWithOffset(container.Render(nil))) {
-		UI.Previous()
+		music.Previous(&SongTable)
+		UpdateSong()
 	}
 
 	var iconName IconName = ICON_PLAY
@@ -179,13 +179,14 @@ func SongControlButton(position Position, next Next) {
 	}
 	if IconButton("c-play", iconName, ICON_BUTTON_PRIMARY, container.Render(nil)) {
 		if isPlaying {
-			rl.PauseMusicStream(UI.Music)
+			music.Pause()
 		} else {
-			rl.PlayMusicStream(UI.Music)
+			music.Play()
 		}
 	}
 	if IconButton("c-play3", ICON_PLAYER_NEXT, ICON_BUTTON_GHOST, ghostWithOffset(container.Render(nil))) {
-		UI.Next()
+		music.Next(&SongTable)
+		UpdateSong()
 	}
 
 	IconButton("repeat", ICON_REPEAT, ICON_BUTTON_GHOST, ghostWithOffset(container.Render(nil)))
@@ -202,8 +203,8 @@ func SongControlTexts(position Position, next Next) {
 	}, position.ToRect(position.Contrains.Width, position.Contrains.Height))
 
 	// FIXME - Line height
-	container.Render(SongControlText(UI.SelectedSong().Title, 28))
-	container.Render(SongControlText(UI.SelectedSong().Artist, 16))
+	container.Render(SongControlText(SongTable.SelectedSong().Title, 28))
+	container.Render(SongControlText(SongTable.SelectedSong().Artist, 16))
 
 	// FIXME - Getting the height of children after, is this ok? prob not right, at least it is weird rn
 	next(position.ToRect(position.Contrains.Width, container.Size.Height))

@@ -1,15 +1,18 @@
 package main
 
 import (
+	"github.com/dudubtw/osu-radio-native/lib"
 	rl "github.com/gen2brain/raylib-go/raylib"
 )
 
 var scrollSpeed = 40
 
 func HomePage() {
-	if UI.HasSelectedSong() {
+	Textures.ProcessPendingTextures()
+
+	if SongTable.HasSelectedSong() && Textures.SelectedSong != nil {
 		rl.BeginShaderMode(Shaders.Blur.Shader)
-		DrawFitImage(UI.SelectedSongTexture(), rl.NewRectangle(0, 0, float32(UI.ScreenW), float32(UI.ScreenH)), rl.Gray)
+		lib.DrawFitImage(*Textures.SelectedSong, rl.NewRectangle(0, 0, float32(UI.ScreenW), float32(UI.ScreenH)), rl.Gray)
 		rl.EndShaderMode()
 
 		rl.DrawRectangle(0, 0, UI.ScreenW, UI.ScreenH, rl.NewColor(18, 18, 18, 209))
@@ -50,7 +53,7 @@ func Panel() ContrainedComponent {
 		container.Render(UpperPart)
 
 		switch UI.SelectedPanelPage {
-		case PANEL_PAGE_SONGS:
+		case lib.PANEL_PAGE_SONGS:
 			container.Render(SongList())
 
 		}
@@ -93,7 +96,7 @@ func UpperPartTabs() ContrainedComponent {
 			Rect:  rect,
 			Value: string(UI.SelectedPanelPage),
 		})
-		UI.SelectedPanelPage = PanelPage(value)
+		UI.SelectedPanelPage = lib.PanelPage(value)
 	}
 }
 
@@ -103,12 +106,12 @@ func PanelSidebarButton(rect rl.Rectangle) {
 
 func PanelSettingsButton(rect rl.Rectangle) {
 	var variant IconButtonVariant = ICON_BUTTON_GHOST
-	if UI.SelectedPanelPage == PANEL_PAGE_SETTINGS {
+	if UI.SelectedPanelPage == lib.PANEL_PAGE_SETTINGS {
 		variant = ICON_BUTTON_SECONDARY
 	}
 
 	if IconButton("settings-button", ICON_SETTINGS, variant, rl.NewRectangle(rect.X, rect.Y+5, rect.Width, rect.Height)) {
-		UI.SelectedPanelPage = PANEL_PAGE_SETTINGS
+		UI.SelectedPanelPage = lib.PANEL_PAGE_SETTINGS
 	}
 }
 
@@ -121,16 +124,16 @@ func Filters(position Position, next Next) {
 func SongList() ContrainedComponent {
 	return func(rect rl.Rectangle) {
 		iRect := rect.ToInt32()
-		rl.BeginScissorMode(iRect.X-2, iRect.Y-2, iRect.Width+4, iRect.Height+4)
+		rl.BeginScissorMode(iRect.X-4, iRect.Y-4, iRect.Width+8, iRect.Height+8)
 
-		rectWithOffset := rl.NewRectangle(rect.X, rect.Y+UI.SidePanelScrollTop, rect.Width, rect.Height)
+		rectWithOffset := rl.NewRectangle(rect.X, rect.Y, rect.Width, rect.Height)
 
 		container := NewLayout(Layout{
 			Direction: DIRECTION_COLUMN,
 			Gap:       12,
 		}, rectWithOffset)
 
-		for index, song := range UI.Songs {
+		for index, song := range SongTable.Songs {
 			container.Render(SongCard(song, index))
 		}
 
@@ -145,10 +148,15 @@ func SongList() ContrainedComponent {
 var titleHeight float32 = 30
 var artistHeight float32 = 21
 
-func SongCard(song Song, index int) Component {
+func isSongCardaHidden(rect rl.Rectangle) bool {
+	return rect.Y < 0 || rect.Y > float32(UI.ScreenH)
+}
+
+func SongCard(song lib.Song, index int) Component {
 	return func(position Position, next Next) {
 		var height float32 = 72
 		var rect = position.ToRect(position.Contrains.Width, height)
+		rect.Y += UI.SidePanelScrollTop
 
 		padding := Padding{}
 		padding.Axis(20, 16)
@@ -169,7 +177,7 @@ func SongCard(song Song, index int) Component {
 			// UI.ActiveId = ""
 
 			if rl.CheckCollisionPointRec(MousePoint, rect) { // HOW DO I IMUI
-				UI.SelectSong(index)
+				SelectSong(index)
 			}
 		} else if rl.CheckCollisionPointRec(MousePoint, rect) {
 			if rl.IsMouseButtonPressed(rl.MouseButtonLeft) {
@@ -181,7 +189,7 @@ func SongCard(song Song, index int) Component {
 			UI.HotId = ""
 		}
 
-		isSelected := UI.SelectedSong().FileName == song.FileName
+		isSelected := SongTable.SelectedSong().FileName == song.FileName
 		buttonColor := rl.Fade(rl.Black, 0.42)
 		if isSelected {
 			buttonColor = rl.Fade(rl.Black, 0.1)
@@ -190,13 +198,23 @@ func SongCard(song Song, index int) Component {
 		} else if UI.HotId == id {
 			buttonColor = rl.Fade(rl.Black, 0.2)
 		}
+
 		// ----------------
-		// FIXME
-		// DrawFitImage(Textures.Songs[song.FileName], rect, rl.White)
-		rl.DrawRectanglePro(rect, rl.Vector2{}, 0, buttonColor)
+		if !isSongCardaHidden(rect) {
+			Textures.LoadSongCard(song, rect)
+		} else {
+			Textures.UnloadSongCard(song)
+		}
+
+		texture := Textures.GetSong(song)
+		if texture != nil {
+			rl.DrawTexture(*texture, rect.ToInt32().X, rect.ToInt32().Y, rl.White)
+		}
+		DrawRectangleRoundedPixels(rect, ROUNDED, buttonColor)
+		// rl.DrawRectanglePro(rect, rl.Vector2{}, 0, buttonColor)
 
 		if isSelected {
-			rl.DrawRectangleRoundedLinesEx(rect, 0, 0, 2, rl.White)
+			DrawRectangleRoundedLinePixels(rect, ROUNDED-1, 4, rl.White)
 		}
 
 		cardContent.Render(SongCardText(song.Title, 20))
