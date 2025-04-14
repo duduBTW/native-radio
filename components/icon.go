@@ -1,6 +1,9 @@
-package main
+package components
 
-import rl "github.com/gen2brain/raylib-go/raylib"
+import (
+	"github.com/dudubtw/osu-radio-native/lib"
+	rl "github.com/gen2brain/raylib-go/raylib"
+)
 
 type IconName int8
 
@@ -27,14 +30,14 @@ const (
 
 const ICON_SIZE float32 = 24
 
-func DrawIcon(name IconName, position rl.Vector2) {
+func DrawIcon(name IconName, position rl.Vector2, textures *lib.Textures) {
 	posOnSprite := rl.Rectangle{
 		Y:      0,
 		X:      ICON_SIZE * float32(name),
 		Width:  ICON_SIZE,
 		Height: ICON_SIZE,
 	}
-	rl.DrawTexturePro(*Textures.Icons, posOnSprite, rl.NewRectangle(position.X, position.Y, ICON_SIZE, ICON_SIZE), rl.Vector2{}, 0, rl.White)
+	rl.DrawTexturePro(*textures.Icons, posOnSprite, rl.NewRectangle(position.X, position.Y, ICON_SIZE, ICON_SIZE), rl.Vector2{}, 0, rl.White)
 }
 
 type IconButtonVariant = int8
@@ -71,10 +74,11 @@ func IconButtonPosition(name IconName, variant IconButtonVariant, position rl.Re
 	return rl.NewRectangle(position.X, position.Y, buttonSize, buttonSize)
 }
 
-func IconButton(id string, name IconName, variant IconButtonVariant, position rl.Rectangle) bool {
+func IconButton(id string, name IconName, variant IconButtonVariant, position rl.Rectangle, ui *lib.UIStruct, textures *lib.Textures, mousePoint rl.Vector2) bool {
 	buttonRect := IconButtonPosition(name, variant, position)
-	clicked := IconButtonEventHandler(id, name, buttonRect)
-	state := IconButtonStateHandler(id, name, buttonRect)
+	interactable := NewInteractable(id, ui)
+	clicked := interactable.Event(mousePoint, buttonRect)
+	state := interactable.State()
 
 	var borderRadius float32 = 0
 	var segments int32 = 0
@@ -115,51 +119,7 @@ func IconButton(id string, name IconName, variant IconButtonVariant, position rl
 	}
 
 	rl.DrawRectangleRounded(buttonRect, borderRadius, segments, color)
-	DrawIcon(name, rl.NewVector2(position.X+(buttonRect.Width-ICON_SIZE)/2, position.Y+(buttonRect.Height-ICON_SIZE)/2))
+	DrawIcon(name, rl.NewVector2(position.X+(buttonRect.Width-ICON_SIZE)/2, position.Y+(buttonRect.Height-ICON_SIZE)/2), textures)
 
 	return clicked
-}
-
-func IconButtonStateHandler(id string, name IconName, rect rl.Rectangle) IconButtonState {
-	if id == UI.ActiveId {
-		return ICON_BUTTON_STATE_ACTIVE
-	}
-	if id == UI.HotId {
-		return ICON_BUTTON_STATE_HOT
-	}
-
-	return ICON_BUTTON_STATE_INITIAL
-}
-
-func IconButtonEventHandler(id string, name IconName, rect rl.Rectangle) bool {
-	isActive := id == UI.ActiveId
-	isInside := rl.CheckCollisionPointRec(MousePoint, rect)
-
-	if isActive && rl.IsMouseButtonUp(rl.MouseButtonLeft) {
-		UI.ActiveId = ""
-		return isInside
-	}
-
-	if isActive {
-		return false
-	}
-
-	if UI.HotId == id && !isInside {
-		UI.HotId = ""
-	}
-
-	if !isInside {
-		return false
-	}
-
-	if rl.IsMouseButtonDown(rl.MouseButtonLeft) {
-		UI.ActiveId = id
-		return false
-	}
-
-	if UI.HotId == "" {
-		UI.HotId = id
-	}
-
-	return false
 }

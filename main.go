@@ -4,40 +4,49 @@ import (
 	"fmt"
 	"os"
 
-	_ "net/http/pprof" // Import pprof
-
 	"github.com/dudubtw/osu-radio-native/lib"
 	rl "github.com/gen2brain/raylib-go/raylib"
 )
 
-var SongTable lib.SongTable
+var songTable lib.SongTable
 var music lib.Music
-var Textures lib.Textures
-var UI lib.UIStruct
-var Shaders lib.Shaders
-var MousePoint rl.Vector2
+var textures lib.Textures
+var ui lib.UIStruct
+var shaders lib.Shaders
+var mousePoint rl.Vector2
 
+func SetVolume(newVolume float32, wasMuteClicked bool) {
+	ui.Volume = newVolume
+	if wasMuteClicked {
+		ui.IsMuted = !ui.IsMuted
+	}
+
+	if ui.IsMuted {
+		music.SetVolume(0)
+	} else {
+		music.SetVolume(newVolume)
+	}
+}
 func UpdateSong() {
-	music.LoadMusic(&SongTable)
-	Textures.LoadSelectedSong(SongTable, Shaders)
+	music.LoadMusic(&songTable)
+	textures.LoadSelectedSong(songTable, shaders)
 }
 func SelectSong(songIndex int) {
-	SongTable.SelectSong(songIndex)
+	songTable.SelectSong(songIndex)
 	UpdateSong()
 }
 
 func InitEverything() {
-	// Songs
 	table, err := lib.NewSongTableFromJson("C:\\Users\\carlo\\AppData\\Roaming\\osu-radio\\storage\\songs.json")
 	if err != nil {
 		fmt.Println("Could not load songs!")
 		panic(1)
 	}
 
-	SongTable = *table
-	UI = lib.NewUi()
-	Textures = lib.NewTexture(table)
-	Shaders = lib.NewShaders()
+	songTable = *table
+	ui = lib.NewUi()
+	textures = lib.NewTexture(table)
+	shaders = lib.NewShaders()
 
 	SelectSong(0)
 }
@@ -47,7 +56,7 @@ func main() {
 
 	rl.SetConfigFlags(rl.FlagWindowResizable)
 	rl.SetConfigFlags(rl.FlagBorderlessWindowedMode)
-	rl.InitWindow(1280, 720, "raylib [core] example - basic window")
+	rl.InitWindow(1400, 1000, "osu! radio")
 	defer rl.CloseWindow()
 
 	rl.InitAudioDevice()
@@ -61,21 +70,21 @@ func main() {
 		}
 
 		if !music.IsSkeekMode && music.HasEnded() {
-			music.Next(&SongTable)
+			music.Next(&songTable)
 			UpdateSong()
+			music.Play()
 		}
 
-		UI.ScreenW = int32(rl.GetScreenWidth())
-		UI.ScreenH = int32(rl.GetScreenHeight())
-		MousePoint = rl.GetMousePosition()
+		ui.ScreenW = int32(rl.GetScreenWidth())
+		ui.ScreenH = int32(rl.GetScreenHeight())
+		mousePoint = rl.GetMousePosition()
 
-		rl.SetShaderValue(Shaders.Blur.Shader, Shaders.Blur.ScreenResLoc, []float32{float32(UI.ScreenW), float32(UI.ScreenH)}, rl.ShaderUniformVec2)
-		rl.SetShaderValue(Shaders.Blur.Shader, Shaders.Blur.MouseLoc, []float32{MousePoint.X, float32(UI.ScreenH) - MousePoint.Y}, rl.ShaderUniformVec2)
+		shaders.Blur.Update(mousePoint, &ui)
 
 		rl.BeginDrawing()
 		rl.ClearBackground(rl.RayWhite)
 
-		switch UI.SelectedPage {
+		switch ui.SelectedPage {
 		case lib.PAGE_HOME:
 			HomePage()
 		case lib.PAGE_SETUP_WIZARD:

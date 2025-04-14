@@ -1,11 +1,12 @@
 package main
 
 import (
+	c "github.com/dudubtw/osu-radio-native/components"
 	rl "github.com/gen2brain/raylib-go/raylib"
 )
 
 type TabsItemProps struct {
-	Icon  IconName
+	Icon  c.IconName
 	Label string
 	Value string
 }
@@ -73,16 +74,16 @@ func TabItem(props TabsItemProps, isSelected bool, drawItem *func() string) Comp
 		}
 
 		tabStyles := ButtonStyles{
-			STATE_INITIAL: getButtonStyle(rl.Fade(rl.Black, 0)),
-			STATE_HOT:     getButtonStyle(rl.Fade(rl.White, 0.1)),
-			STATE_ACTIVE:  getButtonStyle(rl.Fade(rl.White, 0.2)),
+			c.STATE_INITIAL: getButtonStyle(rl.Fade(rl.Black, 0)),
+			c.STATE_HOT:     getButtonStyle(rl.Fade(rl.White, 0.1)),
+			c.STATE_ACTIVE:  getButtonStyle(rl.Fade(rl.White, 0.2)),
 		}
 
 		if isSelected {
 			tabStyles = ButtonStyles{
-				STATE_INITIAL: getButtonStyle(rl.DarkPurple),
-				STATE_HOT:     getButtonStyle(rl.DarkPurple),
-				STATE_ACTIVE:  getButtonStyle(rl.DarkPurple),
+				c.STATE_INITIAL: getButtonStyle(rl.DarkPurple),
+				c.STATE_HOT:     getButtonStyle(rl.DarkPurple),
+				c.STATE_ACTIVE:  getButtonStyle(rl.DarkPurple),
 			}
 		}
 
@@ -102,13 +103,13 @@ func TabItem(props TabsItemProps, isSelected bool, drawItem *func() string) Comp
 	}
 }
 
-func TabItemIcon(name IconName) (Component, func()) {
+func TabItemIcon(name c.IconName) (Component, func()) {
 	var p Position
 	return func(position Position, next Next) {
 			p = position
-			next(rl.NewRectangle(0, 0, ICON_SIZE, ICON_SIZE))
+			next(rl.NewRectangle(0, 0, c.ICON_SIZE, c.ICON_SIZE))
 		}, func() {
-			DrawIcon(name, rl.NewVector2(p.X, p.Y))
+			c.DrawIcon(name, rl.NewVector2(p.X, p.Y), &textures)
 		}
 }
 func TabItemText(value string) (Component, func()) {
@@ -118,6 +119,6 @@ func TabItemText(value string) (Component, func()) {
 			p = position
 			next(position.ToRect(float32(rl.MeasureText(value, fontSize)), float32(fontSize)))
 		}, func() {
-			rl.DrawText(value, int32(p.X), int32(p.Y+((ICON_SIZE-float32(fontSize))/2)), fontSize, rl.White)
+			rl.DrawText(value, int32(p.X), int32(p.Y+((c.ICON_SIZE-float32(fontSize))/2)), fontSize, rl.White)
 		}
 }

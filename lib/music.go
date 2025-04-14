@@ -92,3 +92,11 @@ func (music *Music) HasEnded() bool {
 	// TODO deal with ms, since we are doing int() it only compare seconds
 	return int(rl.GetMusicTimePlayed(*music.Selected)) == int(rl.GetMusicTimeLength(*music.Selected))
 }
+
+func (music *Music) SetVolume(newVolume float32) {
+	if music.Selected == nil {
+		return
+	}
+
+	rl.SetMusicVolume(*music.Selected, newVolume)
+}

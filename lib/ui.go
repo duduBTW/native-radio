@@ -1,6 +1,8 @@
 package lib
 
 import (
+	"time"
+
 	rl "github.com/gen2brain/raylib-go/raylib"
 )
 
@@ -14,12 +16,17 @@ type UIStruct struct {
 
 	ActiveId string
 	HotId    string
+
+	Volume           float32
+	IsMuted          bool
+	LastTimeScrolled time.Time
 }
 
 func NewUi() UIStruct {
 	ui := UIStruct{
 		SelectedPanelPage: PANEL_PAGE_SONGS,
 		SelectedPage:      PAGE_HOME,
+		Volume:            0.5,
 	}
 	return ui
 }

@@ -11,6 +11,18 @@ type BlurShader struct {
 	MouseLoc     int32
 }
 
+func (shader *BlurShader) Update(mousePoint rl.Vector2, ui *UIStruct) {
+	shader.setScreenResLoc(ui)
+	shader.setMouseLoc(mousePoint, ui)
+}
+
+func (shader *BlurShader) setMouseLoc(mousePoint rl.Vector2, ui *UIStruct) {
+	rl.SetShaderValue(shader.Shader, shader.MouseLoc, []float32{mousePoint.X, float32(ui.ScreenH) - mousePoint.Y}, rl.ShaderUniformVec2)
+}
+func (shader *BlurShader) setScreenResLoc(ui *UIStruct) {
+	rl.SetShaderValue(shader.Shader, shader.ScreenResLoc, []float32{float32(ui.ScreenW), float32(ui.ScreenH)}, rl.ShaderUniformVec2)
+}
+
 type Shaders struct {
 	Blur   BlurShader
 	Shadow rl.Shader

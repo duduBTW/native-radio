@@ -106,13 +106,13 @@ func Slider(slider SliderProps) float32 {
 }
 
 func SliderValueHanlder(slider SliderProps) float32 {
-	if slider.Id != UI.ActiveId {
+	if slider.Id != ui.ActiveId {
 		return slider.Value
 	}
 
 	start := slider.Rect.X
 	end := slider.Rect.Width
-	mouseX := MousePoint.X - start
+	mouseX := mousePoint.X - start
 
 	if mouseX < 0 {
 		return 0.001
@@ -126,12 +126,12 @@ func SliderValueHanlder(slider SliderProps) float32 {
 }
 
 func SliderStateHandler(slider SliderProps) SliderMode {
-	if slider.Id == UI.ActiveId {
+	if slider.Id == ui.ActiveId {
 		sliderState.IsActive = true
 		return SLIDER_STATE_ACTIVE
 	}
 
-	if slider.Id == UI.HotId {
+	if slider.Id == ui.HotId {
 		return SLIDER_STATE_HOT
 	}
 
@@ -139,30 +139,37 @@ func SliderStateHandler(slider SliderProps) SliderMode {
 }
 
 func SliderEventHandler(slider SliderProps) {
-	if slider.Id == UI.ActiveId && rl.IsMouseButtonReleased(rl.MouseLeftButton) {
-		UI.ActiveId = ""
+	isActive := slider.Id == ui.ActiveId
+	isInside := rl.CheckCollisionPointRec(mousePoint, slider.Rect)
+
+	// Other element is being interacted with
+	if ui.ActiveId != "" && !isActive {
+		return
+	}
+
+	if isActive && rl.IsMouseButtonReleased(rl.MouseLeftButton) {
+		ui.ActiveId = ""
 		sliderState.IsItemDeactivatedAfterEdit = true
 		sliderState.IsActive = false
 		return
 	}
 
-	if slider.Id == UI.ActiveId {
+	if isActive {
 		return
 	}
 
-	isInside := rl.CheckCollisionPointRec(MousePoint, slider.Rect)
-	if slider.Id != UI.ActiveId && isInside && rl.IsMouseButtonDown(rl.MouseButtonLeft) {
-		UI.ActiveId = slider.Id
+	if slider.Id != ui.ActiveId && isInside && rl.IsMouseButtonDown(rl.MouseButtonLeft) {
+		ui.ActiveId = slider.Id
 		sliderState.IsItemActivated = true
 		return
 	}
 
-	if UI.HotId == slider.Id && !isInside {
-		UI.HotId = ""
+	if ui.HotId == slider.Id && !isInside {
+		ui.HotId = ""
 		return
 	}
 
-	if UI.HotId != slider.Id && isInside {
-		UI.HotId = slider.Id
+	if ui.HotId != slider.Id && isInside {
+		ui.HotId = slider.Id
 	}
 }
