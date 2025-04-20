@@ -4,6 +4,19 @@ import (
 	rl "github.com/gen2brain/raylib-go/raylib"
 )
 
+type BgBlurShader struct {
+	Shader  rl.Shader
+	ResLoc  int32
+	TimeLoc int32
+}
+
+func (shader *BgBlurShader) SetTime(time float32) {
+	rl.SetShaderValue(shader.Shader, shader.TimeLoc, []float32{time}, rl.ShaderUniformFloat)
+}
+func (shader *BgBlurShader) SetRes(res [2]float32) {
+	rl.SetShaderValue(shader.Shader, shader.ResLoc, res[:], rl.ShaderUniformVec2)
+}
+
 type BlurShader struct {
 	Shader       rl.Shader
 	TexResLoc    int32
@@ -25,6 +38,7 @@ func (shader *BlurShader) setScreenResLoc(ui *UIStruct) {
 
 type Shaders struct {
 	Blur   BlurShader
+	BgBlur BgBlurShader
 	Shadow rl.Shader
 }
 
@@ -45,10 +59,20 @@ func (shaders *Shaders) LoadBlur() {
 	rl.SetShaderValue(shader, blurRadiusLoc, []float32{blurRadius}, rl.ShaderUniformFloat)
 	shaders.Blur = blur
 }
+func (shaders *Shaders) LoadBgBlur() {
+	shader := rl.LoadShader("", "D:\\Peronal\\native-radio\\shaders\\bg-blur.fs")
+	bgBlur := BgBlurShader{
+		Shader:  shader,
+		ResLoc:  rl.GetShaderLocation(shader, "iResolution"),
+		TimeLoc: rl.GetShaderLocation(shader, "iTime"),
+	}
+	shaders.BgBlur = bgBlur
+}
 
 func NewShaders() Shaders {
 	shaders := Shaders{}
 	shaders.LoadShadow()
 	shaders.LoadBlur()
+	shaders.LoadBgBlur()
 	return shaders
 }

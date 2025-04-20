@@ -35,9 +35,9 @@ func Tabs(props TabsProps) string {
 		renders = append(renders, drawItem)
 	}
 
-	DrawRectangleRoundedPixels(
+	c.DrawRectangleRoundedPixels(
 		rl.NewRectangle(props.Rect.X, props.Rect.Y, container.Size.Width, container.Size.Height),
-		ROUNDED,
+		c.ROUNDED,
 		rl.NewColor(13, 13, 13, 242),
 	)
 
@@ -70,7 +70,7 @@ func TabItem(props TabsItemProps, isSelected bool, drawItem *func() string) Comp
 		rect := position.ToRect(container.Size.Width, container.Size.Height)
 
 		getButtonStyle := func(color rl.Color) ButtonStyle {
-			return ButtonStyle{Color: color, BorderRadius: ROUNDED - containerPadding}
+			return ButtonStyle{Color: color, BorderRadius: c.ROUNDED - containerPadding}
 		}
 
 		tabStyles := ButtonStyles{

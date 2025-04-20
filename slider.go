@@ -1,6 +1,7 @@
 package main
 
 import (
+	c "github.com/dudubtw/osu-radio-native/components"
 	rl "github.com/gen2brain/raylib-go/raylib"
 )
 
@@ -15,7 +16,7 @@ const (
 type Thumb struct {
 	Size      Size
 	Offset    rl.Vector2
-	Roundness Roundness
+	Roundness c.Roundness
 }
 
 type SliderState struct {
@@ -67,7 +68,7 @@ type SliderProps struct {
 	Value        float32
 	Rect         rl.Rectangle
 	Padding      float32
-	BorderRadius Roundness
+	BorderRadius c.Roundness
 	Thumb        Thumb
 	Color        rl.Color
 }
@@ -75,7 +76,7 @@ type SliderProps struct {
 func Slider(slider SliderProps) float32 {
 	SliderEventHandler(slider)
 	state := SliderStateHandler(slider)
-	DrawRectangleRoundedPixels(slider.Rect, slider.BorderRadius, rl.Fade(rl.Black, 0.8))
+	c.DrawRectangleRoundedPixels(slider.Rect, slider.BorderRadius, rl.Fade(rl.Black, 0.8))
 
 	totalProgressRect, valueWidth := SliderValue(slider)
 	progressRect := rl.Rectangle{
@@ -87,7 +88,7 @@ func Slider(slider SliderProps) float32 {
 
 	var rectInt32 = slider.Rect.ToInt32()
 	rl.BeginScissorMode(rectInt32.X+3, rectInt32.Y, int32(valueWidth), int32(slider.Rect.Height))
-	DrawRectangleRoundedPixels(progressRect, slider.BorderRadius-slider.Padding, slider.Color)
+	c.DrawRectangleRoundedPixels(progressRect, slider.BorderRadius-slider.Padding, slider.Color)
 	rl.EndScissorMode()
 
 	thumbColor := rl.DarkGray
@@ -99,7 +100,7 @@ func Slider(slider SliderProps) float32 {
 	}
 
 	thumbRect := SliderThumbRect(slider)
-	DrawRectangleRoundedPixels(thumbRect, slider.Thumb.Roundness, thumbColor)
+	c.DrawRectangleRoundedPixels(thumbRect, slider.Thumb.Roundness, thumbColor)
 
 	newValue := SliderValueHanlder(slider)
 	return newValue

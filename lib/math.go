@@ -1,5 +1,11 @@
 package lib
 
+import (
+	"math/rand/v2"
+
+	rl "github.com/gen2brain/raylib-go/raylib"
+)
+
 func Max(value, max float32) float32 {
 	if value < max {
 		return max
@@ -70,4 +76,15 @@ func Clamp(value, min, max float32) float32 {
 	}
 
 	return value
+}
+
+func CheckCollisionPointCircle(centerX, centerY int32, radius float32, mousePoint rl.Vector2) bool {
+	dx := centerX - int32(mousePoint.X)
+	dy := centerY - int32(mousePoint.Y)
+	distanceSquared := dx*dx + dy*dy
+	return distanceSquared <= int32(radius*radius)
+}
+
+func RandomRange(min, max int) int {
+	return rand.IntN(max-min) + min
 }

@@ -6,32 +6,45 @@ import (
 )
 
 type Song struct {
-	Audio      string `json:"audio"`
-	Title      string `json:"title"`
-	Artist     string `json:"artist"`
-	Background string `json:"bg"`
-	FileName   string
-}
-
-func (s *Song) Id() string {
-	return s.Title + s.Artist + s.FileName
+	ID             int
+	Audio          string  `json:"audio"`
+	Bg             string  `json:"bg,omitempty"`
+	OsuFile        string  `json:"osuFile"`
+	Path           string  `json:"path"`
+	DateAdded      string  `json:"dateAdded"`
+	Title          string  `json:"title"`
+	Artist         string  `json:"artist"`
+	Creator        string  `json:"creator"`
+	Duration       float64 `json:"duration"`
+	BeatmapSetID   *int    `json:"beatmapSetID,omitempty"`
+	Mode           *int    `json:"mode,omitempty"`
+	TitleUnicode   *string `json:"titleUnicode,omitempty"`
+	ArtistUnicode  *string `json:"artistUnicode,omitempty"`
+	PrimaryColor   *string `json:"primaryColor,omitempty"`
+	SecondaryColor *string `json:"secondaryColor,omitempty"`
 }
 
 type SongTable struct {
 	Songs             []Song
 	selectedSongindex int
+	selectedSong      Song
+}
+
+func (table *SongTable) SetSongs(songs []Song) {
+	table.Songs = songs
 }
 
 func (table *SongTable) HasSelectedSong() bool {
-	return table.SelectedSong().FileName != ""
+	return table.SelectedSong().Path != ""
 }
 
 func (table *SongTable) SelectSong(songIndex int) {
 	table.selectedSongindex = songIndex
+	table.selectedSong = table.Songs[songIndex]
 }
 
 func (table *SongTable) SelectedSong() Song {
-	return table.Songs[table.selectedSongindex]
+	return table.selectedSong
 }
 
 func (table *SongTable) Next() {
@@ -60,7 +73,7 @@ func NewSongTableFromJson(filename string) (*SongTable, error) {
 	var i = 0
 	for fileName, song := range songMap {
 		songs[i] = song
-		songs[i].FileName = fileName
+		songs[i].Path = fileName
 		i++
 	}
 

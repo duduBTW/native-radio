@@ -18,7 +18,7 @@ func (music *Music) LoadMusic(table *SongTable) error {
 		rl.UnloadMusicStream(*music.Selected)
 	}
 
-	loadedMusic, err := ReadEncriptedMusic(table.SelectedSong().FileName)
+	loadedMusic, err := ReadEncriptedMusic(table.SelectedSong().Path)
 	if err != nil {
 		return err
 	}
@@ -54,6 +54,13 @@ func (music *Music) ExitSeekMode() {
 	}
 }
 
+func (music *Music) Toggle() {
+	if rl.IsMusicStreamPlaying(*music.Selected) {
+		music.Pause()
+	} else {
+		music.Play()
+	}
+}
 func (music *Music) Play() {
 	rl.PlayMusicStream(*music.Selected)
 }

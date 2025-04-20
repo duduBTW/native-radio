@@ -14,18 +14,30 @@ type UIStruct struct {
 	SelectedPanelPage PanelPage
 	SelectedPage      Page
 
-	ActiveId string
-	HotId    string
+	FocusedId string
+	ActiveId  string
+	HotId     string
 
 	Volume           float32
 	IsMuted          bool
 	LastTimeScrolled time.Time
+
+	SearchValue string
 }
 
-func NewUi() UIStruct {
+func (ui *UIStruct) ScrollToIndex(index int) {
+	ui.SidePanelScrollTop = -float32(index * (72 + 12))
+}
+
+func NewUi(table *SongTable) UIStruct {
+	var selectedPage Page = PAGE_SETUP_WIZARD
+	if len(table.Songs) > 0 {
+		selectedPage = PAGE_HOME
+	}
+
 	ui := UIStruct{
 		SelectedPanelPage: PANEL_PAGE_SONGS,
-		SelectedPage:      PAGE_HOME,
+		SelectedPage:      selectedPage,
 		Volume:            0.5,
 	}
 	return ui
@@ -58,13 +70,34 @@ func ImageFitCordinates(origin rl.Vector2, target rl.Vector2) rl.Rectangle {
 	return rl.NewRectangle(sourceX, sourceY, newWidth, newHeight)
 }
 
-func DrawFitImage(texture rl.Texture2D, target rl.Rectangle, color rl.Color) {
+// func DrawFitImage(texture rl.Texture2D, rect rl.Rectangle, color rl.Color) {
+// 	origin := rl.NewVector2(float32(texture.Width), float32(texture.Height))
+// 	target := rl.NewVector2(float32(rect.Width), float32(rect.Height))
+
+// 	rl.DrawTexturePro(
+// 		texture,
+// 		ImageFitCordinates(origin, target),
+// 		rect,
+// 		rl.NewVector2(0, 0),
+// 		0,
+// 		color,
+// 	)
+// }
+
+func DrawFitTexture(tex rl.Texture2D, dest rl.Rectangle, tint rl.Color) {
+	// use the texture’s fields, not some stale origin you pulled earlier
+	origin := rl.NewVector2(float32(tex.Width), float32(tex.Height))
+	target := rl.NewVector2(dest.Width, dest.Height)
+
+	src := ImageFitCordinates(origin, target)
+	// now src.X/Y/W/H line up exactly with GPU‐side pixels
+
 	rl.DrawTexturePro(
-		texture,
-		ImageFitCordinates(rl.NewVector2(float32(texture.Width), float32(texture.Height)), rl.NewVector2(float32(target.Width), float32(target.Height))),
-		rl.NewRectangle(target.X, target.Y, target.Width, target.Height),
+		tex,
+		src,
+		dest,
 		rl.NewVector2(0, 0),
 		0,
-		color,
+		tint,
 	)
 }

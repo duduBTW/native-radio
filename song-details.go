@@ -33,7 +33,7 @@ func SongDetails(rect rl.Rectangle) {
 	container.Render(SongMiniature)
 	container.Render(SongControls)
 
-	SetVolume(components.VolumeSlider(ui.Volume, isVolumeSliderActive, &ui, &textures, mousePoint))
+	SetVolume(components.VolumeSlider(ui.Volume, isVolumeSliderActive, &ui, &textures, mousePoint, db))
 }
 
 func SongMiniature(rect rl.Rectangle) {
@@ -88,7 +88,7 @@ func SongProgress(position Position, next Next) {
 		Value:        music.Progress(),
 		Rect:         rect,
 		Padding:      4,
-		BorderRadius: ROUNDED,
+		BorderRadius: c.ROUNDED,
 		Thumb: Thumb{
 			Size: Size{
 				Width:  6,

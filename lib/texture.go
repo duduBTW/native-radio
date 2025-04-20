@@ -11,10 +11,10 @@ type Textures struct {
 	SelectedSong *rl.Texture2D
 	Miniature    *rl.Texture2D
 
-	Songs map[string](*rl.Texture2D)
+	Songs map[int](*rl.Texture2D)
 
 	SongsLoading bool
-	SongsERROR   map[string]bool
+	SongsERROR   map[int]bool
 	IsLoadingSmt bool
 }
 
@@ -24,16 +24,16 @@ var pendingTextures = make(chan struct {
 }, 32)
 
 func (textures *Textures) GetSong(song Song) *rl.Texture2D {
-	return textures.Songs[song.Id()]
+	return textures.Songs[song.ID]
 }
 func (textures *Textures) SetSong(song Song, texture *rl.Texture2D) {
-	textures.Songs[song.Id()] = texture
+	textures.Songs[song.ID] = texture
 }
 func (textures *Textures) SetSongError(song Song, hasErrror bool) {
-	textures.SongsERROR[song.Id()] = hasErrror
+	textures.SongsERROR[song.ID] = hasErrror
 }
 func (textures *Textures) GetSongError(song Song) bool {
-	return textures.SongsERROR[song.Id()]
+	return textures.SongsERROR[song.ID]
 }
 func (textures *Textures) GetSongLoading(song Song) bool {
 	return textures.SongsLoading
@@ -53,6 +53,7 @@ func (textures *Textures) Unload(texture *rl.Texture2D) {
 func (textures *Textures) LoadIcon() {
 	iconTexture := rl.LoadTexture("D:\\Peronal\\native-radio\\sprites\\icon-sprite.png")
 	textures.Icons = &iconTexture
+	rl.SetTextureFilter(*textures.Icons, rl.TextureFilterLinear)
 }
 
 func GenerateImage(filePath string, maskPath string, size rl.Vector2, color rl.Color) (*rl.Image, error) {
@@ -96,7 +97,7 @@ func (textures *Textures) LoadSongCard(song Song, rect rl.Rectangle) {
 	textures.SetSongLoading(true)
 
 	go func() {
-		image, err := GenerateImage(song.Background, "D:\\Peronal\\native-radio\\masks\\card.png", rl.NewVector2(rect.Width, rect.Height), rl.White)
+		image, err := GenerateImage(song.Bg, "D:\\Peronal\\native-radio\\masks\\card.png", rl.NewVector2(rect.Width, rect.Height), rl.White)
 		if err != nil {
 			fmt.Println("ERROR LOADING SONG TEXTURE!", err)
 			textures.SetSongLoading(false)
@@ -129,7 +130,7 @@ func (textures *Textures) LoadSelectedSong(table SongTable, shaders Shaders) {
 func (textures *Textures) LoadSongBackground(song Song, shaders Shaders) {
 	textures.Unload(textures.SelectedSong)
 
-	texture, err := ReadEncriptedTexture(song.Background)
+	texture, err := ReadEncriptedTexture(song.Bg)
 	if err != nil {
 		panic(1)
 	}
@@ -141,7 +142,7 @@ func (textures *Textures) LoadSongBackground(song Song, shaders Shaders) {
 func (textures *Textures) LoadSongMiniature(song Song) {
 	textures.Unload(textures.Miniature)
 
-	texture, err := GenerateTexture(song.Background, "D:\\Peronal\\native-radio\\masks\\miniature.png", rl.NewVector2(STYLE_MINIATURE_SIZE, STYLE_MINIATURE_SIZE), rl.White)
+	texture, err := GenerateTexture(song.Bg, "D:\\Peronal\\native-radio\\masks\\miniature.png", rl.NewVector2(STYLE_MINIATURE_SIZE, STYLE_MINIATURE_SIZE), rl.White)
 	if err != nil {
 		fmt.Println(err)
 		panic(1)
@@ -165,11 +166,17 @@ func (textures *Textures) ProcessPendingTextures() {
 	}
 }
 
+func (textures *Textures) SyncWithTable(table *SongTable) {
+	textures.Songs = make(map[int]*rl.Texture2D, len(table.Songs))
+	textures.SongsERROR = make(map[int]bool, len(table.Songs))
+}
+
 func NewTexture(table *SongTable) Textures {
-	textures := Textures{
-		Songs:      make(map[string]*rl.Texture2D, len(table.Songs)),
-		SongsERROR: make(map[string]bool, len(table.Songs)),
+	var textures = Textures{}
+	if table != nil {
+		textures.SyncWithTable(table)
 	}
+
 	textures.LoadIcon()
 
 	return textures
