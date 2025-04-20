@@ -19,7 +19,7 @@ func HomePage() {
 		music.Play()
 	}
 
-	if rl.IsKeyPressed(rl.KeySpace) {
+	if rl.IsKeyPressed(rl.KeySpace) && ui.FocusedId == "" {
 		music.Toggle()
 	}
 
@@ -169,7 +169,11 @@ func SongList() ContrainedComponent {
 		}
 
 		if rl.CheckCollisionPointRec(mousePoint, rect) {
-			ui.SidePanelScrollTop = lib.Clamp(ui.SidePanelScrollTop+rl.GetMouseWheelMove()*float32(scrollSpeed), -(container.Size.Height - rect.Height), 0) // FIXME: container.Size.Height IS WRONG
+			newScroll := ui.SidePanelScrollTop + rl.GetMouseWheelMove()*float32(scrollSpeed)
+			scrollHeight := container.Size.Height - rect.Height
+			if scrollHeight > newScroll {
+				ui.SidePanelScrollTop = lib.Clamp(newScroll, -(scrollHeight), 0)
+			}
 		}
 
 		rl.EndScissorMode()

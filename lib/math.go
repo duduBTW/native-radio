@@ -67,11 +67,11 @@ func NewLinearScale(domain, base [2]float32) func(value float32) float32 {
 }
 
 func Clamp(value, min, max float32) float32 {
-	if value > max {
+	if value >= max {
 		return max
 	}
 
-	if value < min {
+	if value <= min {
 		return min
 	}
 
