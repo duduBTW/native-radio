@@ -45,6 +45,11 @@ func SelectSong(songIndex int) {
 		dbManager.UpdateSelectedIndex(db, songIndex)
 	}()
 }
+func Shuffle() {
+	SelectSong(lib.RandomRange(0, len(songTable.Songs)))
+	ui.ScrollToIndex(songTable.SelectedSongindex)
+	music.Play()
+}
 func ExecTrash(lazerFilePath string) {
 	go func() {
 		cmd := exec.Command("node", "D:\\Peronal\\native-radio\\trash\\index.js", "--lazer="+lazerFilePath)

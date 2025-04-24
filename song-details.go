@@ -195,7 +195,10 @@ func SongControlButton(position Position, next Next) {
 	}
 
 	c.IconButton("repeat", c.ICON_REPEAT, c.ICON_BUTTON_GHOST, ghostWithOffset(container.Render(nil)), &ui, &textures, mousePoint)
-	c.IconButton("shuffle", c.ICON_SHUFFLE, c.ICON_BUTTON_GHOST, ghostWithOffset(container.Render(nil)), &ui, &textures, mousePoint)
+	if c.IconButton("shuffle", c.ICON_SHUFFLE, c.ICON_BUTTON_GHOST, ghostWithOffset(container.Render(nil)), &ui, &textures, mousePoint) {
+		Shuffle()
+	}
+
 	c.IconButton("add-playlist", c.ICON_ADD_CIRCLE, c.ICON_BUTTON_GHOST, ghostWithOffset(container.Render(nil)), &ui, &textures, mousePoint)
 
 	next(rect)

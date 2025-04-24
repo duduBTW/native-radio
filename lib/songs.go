@@ -26,7 +26,7 @@ type Song struct {
 
 type SongTable struct {
 	Songs             []Song
-	selectedSongindex int
+	SelectedSongindex int
 	selectedSong      Song
 }
 
@@ -39,7 +39,7 @@ func (table *SongTable) HasSelectedSong() bool {
 }
 
 func (table *SongTable) SelectSong(songIndex int) {
-	table.selectedSongindex = songIndex
+	table.SelectedSongindex = songIndex
 	table.selectedSong = table.Songs[songIndex]
 }
 
@@ -48,11 +48,11 @@ func (table *SongTable) SelectedSong() Song {
 }
 
 func (table *SongTable) Next() {
-	table.SelectSong(MinInt(table.selectedSongindex+1, len(table.Songs)-1))
+	table.SelectSong(MinInt(table.SelectedSongindex+1, len(table.Songs)-1))
 }
 
 func (table *SongTable) Previous() {
-	table.SelectSong(MaxInt(table.selectedSongindex-1, 0))
+	table.SelectSong(MaxInt(table.SelectedSongindex-1, 0))
 }
 
 func NewSongTableFromJson(filename string) (*SongTable, error) {

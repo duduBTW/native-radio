@@ -9,33 +9,34 @@ import (
 var scrollSpeed = 40
 
 func HomePage() {
+	// Feed music into audio card
 	if music.Selected != nil {
 		rl.UpdateMusicStream(*music.Selected)
 	}
 
+	// Check if song ended
 	if !music.IsSkeekMode && music.HasEnded() {
 		music.Next(&songTable)
 		UpdateSong()
 		music.Play()
 	}
 
+	// Space pause
 	if rl.IsKeyPressed(rl.KeySpace) && ui.FocusedId == "" {
 		music.Toggle()
 	}
 
+	// Shuffle
 	if rl.IsKeyPressed(rl.KeyF2) {
-		SelectSong(lib.RandomRange(0, len(songTable.Songs)))
+		Shuffle()
 	}
 
 	textures.ProcessPendingTextures()
-
 	if songTable.HasSelectedSong() && textures.SelectedSong != nil {
-		rl.BeginShaderMode(shaders.Blur.Shader)
-		lib.DrawFitTexture(*textures.SelectedSong, rl.NewRectangle(0, 0, float32(ui.ScreenW), float32(ui.ScreenH)), rl.Gray)
-		rl.EndShaderMode()
-		rl.DrawRectangle(0, 0, ui.ScreenW, ui.ScreenH, rl.NewColor(18, 18, 18, 209))
+		BackgroundImage()
 	}
 
+	// Components
 	padding := Padding{}
 	var home = NewConstrainedLayout(ContrainedLayout{
 		Contrains: rl.Rectangle{Width: float32(ui.ScreenW), Height: float32(ui.ScreenH), X: 0, Y: 0},
@@ -49,6 +50,13 @@ func HomePage() {
 
 	home.Render(Panel())
 	home.Render(SongDetails)
+}
+
+func BackgroundImage() {
+	rl.BeginShaderMode(shaders.Blur.Shader)
+	lib.DrawFitTexture(*textures.SelectedSong, rl.NewRectangle(0, 0, float32(ui.ScreenW), float32(ui.ScreenH)), rl.Gray)
+	rl.EndShaderMode()
+	rl.DrawRectangle(0, 0, ui.ScreenW, ui.ScreenH, rl.NewColor(18, 18, 18, 209))
 }
 
 func Panel() ContrainedComponent {
@@ -98,6 +106,21 @@ func UpperPart(rect rl.Rectangle) {
 }
 
 func Filters(rect rl.Rectangle) {
+	layout := NewConstrainedLayout(ContrainedLayout{
+		Direction: DIRECTION_ROW,
+		Contrains: rect,
+		Gap:       12,
+		ChildrenSize: []ChildSize{
+			{SizeType: SIZE_WEIGHT, Value: 1},
+			{SizeType: SIZE_ABSOLUTE, Value: c.ICON_BUTTON_SIZE_GHOST},
+		},
+	})
+
+	layout.Render(SearchInput)
+	layout.Render(FiltersExpandButton)
+}
+
+func SearchInput(rect rl.Rectangle) {
 	newSearchValue := c.Input(c.InputProps{
 		X:           rect.X,
 		Y:           rect.Y,
@@ -113,6 +136,11 @@ func Filters(rect rl.Rectangle) {
 		ui.SearchValue = newSearchValue
 		UpdateSongList()
 	}
+}
+
+func FiltersExpandButton(rect rl.Rectangle) {
+	rect.Y += (rect.Height - c.ICON_BUTTON_SIZE_GHOST) / 2
+	c.IconButton("filter-expand", c.ICON_FILTER, c.ICON_BUTTON_GHOST, rect, &ui, &textures, mousePoint)
 }
 
 func UpperPartTabs() ContrainedComponent {
@@ -168,15 +196,42 @@ func SongList() ContrainedComponent {
 			container.Render(SongCard(song, index, rect))
 		}
 
-		if rl.CheckCollisionPointRec(mousePoint, rect) {
+		scrollTo := func(dest float32) {
+			scrollHeight := container.Size.Height - rect.Height
+			ui.SidePanelScrollTop = lib.Clamp(dest, -(scrollHeight), 0)
+		}
+
+		if rl.IsKeyPressed(rl.KeyPageDown) || rl.IsKeyDown(rl.KeyPageDown) {
+			scrollTo(ui.SidePanelScrollTop - float32(ui.ScreenH))
+		} else if rl.IsKeyPressed(rl.KeyPageUp) || rl.IsKeyDown(rl.KeyPageUp) {
+			scrollTo(ui.SidePanelScrollTop + float32(ui.ScreenH))
+		} else if rl.CheckCollisionPointRec(mousePoint, rect) {
 			newScroll := ui.SidePanelScrollTop + rl.GetMouseWheelMove()*float32(scrollSpeed)
 			scrollHeight := container.Size.Height - rect.Height
 			if scrollHeight > newScroll {
-				ui.SidePanelScrollTop = lib.Clamp(newScroll, -(scrollHeight), 0)
+				scrollTo(newScroll)
 			}
 		}
 
 		rl.EndScissorMode()
+
+		h := float32(rect.Height) - 10
+		if container.Size.Height > h {
+			scrollbarThumbRatio := h / container.Size.Height
+			thumbHeight := lib.Clamp(h*scrollbarThumbRatio, 28, 100)
+
+			maxScroll := container.Size.Height - h
+			scrollProgress := rl.Clamp((ui.SidePanelScrollTop*-1)/maxScroll, 0, 1)
+			movableSpace := h - thumbHeight
+
+			thumbY := rect.Y + scrollProgress*movableSpace
+			thumbRect := rl.NewRectangle(rect.X-12, thumbY, 4, thumbHeight)
+			c.DrawRectangleRoundedPixels(
+				thumbRect,
+				8,
+				rl.White,
+			)
+		}
 	}
 }
 

@@ -107,7 +107,7 @@ func DrawCusor(position int, value string, textX, textY, fontSize int32, ui *lib
 	rl.DrawLine(x, y-cursorHeight, x, y+cursorHeight, color)
 }
 
-const blinkInterval = 0.6
+const blinkInterval = 0.8
 const blinkTotal = 0.5
 
 func ShouldBlink(ui *lib.UIStruct) bool {

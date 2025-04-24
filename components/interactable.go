@@ -61,7 +61,7 @@ func (interactable *Interactable) Event(mousePoint rl.Vector2, rect rl.Rectangle
 		return false
 	}
 
-	if rl.IsMouseButtonDown(rl.MouseButtonLeft) {
+	if rl.IsMouseButtonPressed(rl.MouseButtonLeft) {
 		ui.ActiveId = id
 		ui.HotId = ""
 		return false

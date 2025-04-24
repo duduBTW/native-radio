@@ -5,6 +5,13 @@ import (
 	rl "github.com/gen2brain/raylib-go/raylib"
 )
 
+type SliderDirection int
+
+const (
+	SLIDER_DIRECTION_HORIZONTAL SliderDirection = 0
+	SLIDER_DIRECTION_VERTICAL   SliderDirection = 1
+)
+
 type SliderMode int
 
 const (
@@ -71,6 +78,7 @@ type SliderProps struct {
 	BorderRadius c.Roundness
 	Thumb        Thumb
 	Color        rl.Color
+	Direction    SliderDirection
 }
 
 func Slider(slider SliderProps) float32 {
@@ -101,7 +109,6 @@ func Slider(slider SliderProps) float32 {
 
 	thumbRect := SliderThumbRect(slider)
 	c.DrawRectangleRoundedPixels(thumbRect, slider.Thumb.Roundness, thumbColor)
-
 	newValue := SliderValueHanlder(slider)
 	return newValue
 }
@@ -111,19 +118,39 @@ func SliderValueHanlder(slider SliderProps) float32 {
 		return slider.Value
 	}
 
-	start := slider.Rect.X
-	end := slider.Rect.Width
-	mouseX := mousePoint.X - start
+	var start float32
+	switch slider.Direction {
+	case SLIDER_DIRECTION_HORIZONTAL:
+		start = slider.Rect.X
+	case SLIDER_DIRECTION_VERTICAL:
+		start = slider.Rect.Y
+	}
 
-	if mouseX < 0 {
+	var end float32
+	switch slider.Direction {
+	case SLIDER_DIRECTION_HORIZONTAL:
+		end = slider.Rect.Width
+	case SLIDER_DIRECTION_VERTICAL:
+		end = slider.Rect.Height
+	}
+
+	var mousePos float32
+	switch slider.Direction {
+	case SLIDER_DIRECTION_HORIZONTAL:
+		mousePos = mousePoint.X - start
+	case SLIDER_DIRECTION_VERTICAL:
+		mousePos = mousePoint.Y - start
+	}
+
+	if mousePos < 0 {
 		return 0.001
 	}
 
-	if mouseX > end {
+	if mousePos > end {
 		return 1
 	}
 
-	return mouseX / end
+	return mousePos / end
 }
 
 func SliderStateHandler(slider SliderProps) SliderMode {
@@ -159,7 +186,7 @@ func SliderEventHandler(slider SliderProps) {
 		return
 	}
 
-	if slider.Id != ui.ActiveId && isInside && rl.IsMouseButtonDown(rl.MouseButtonLeft) {
+	if slider.Id != ui.ActiveId && isInside && rl.IsMouseButtonPressed(rl.MouseButtonLeft) {
 		ui.ActiveId = slider.Id
 		sliderState.IsItemActivated = true
 		return
