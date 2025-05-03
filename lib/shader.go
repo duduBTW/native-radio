@@ -43,10 +43,10 @@ type Shaders struct {
 }
 
 func (shaders *Shaders) LoadShadow() {
-	shaders.Shadow = rl.LoadShader("", "D:\\Peronal\\native-radio\\shaders\\shadow.fs")
+	shaders.Shadow = rl.LoadShader("", "shaders/shadow.fs")
 }
 func (shaders *Shaders) LoadBlur() {
-	shader := rl.LoadShader("", "D:\\Peronal\\native-radio\\shaders\\blur.fs")
+	shader := rl.LoadShader("", "shaders/blur.fs")
 	blur := BlurShader{
 		Shader:       shader,
 		TexResLoc:    rl.GetShaderLocation(shader, "textureResolution"),
@@ -60,7 +60,7 @@ func (shaders *Shaders) LoadBlur() {
 	shaders.Blur = blur
 }
 func (shaders *Shaders) LoadBgBlur() {
-	shader := rl.LoadShader("", "D:\\Peronal\\native-radio\\shaders\\bg-blur.fs")
+	shader := rl.LoadShader("", "shaders/bg-blur.fs")
 	bgBlur := BgBlurShader{
 		Shader:  shader,
 		ResLoc:  rl.GetShaderLocation(shader, "iResolution"),

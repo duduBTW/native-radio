@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/dudubtw/osu-radio-native/lib"
+	"github.com/dudubtw/osu-radio-native/theme"
 	rl "github.com/gen2brain/raylib-go/raylib"
 )
 
@@ -15,17 +16,15 @@ type InputProps struct {
 	Placeholder string
 	Value       string
 	Icon        IconName
-	Ui          *lib.UIStruct
-	MousePoint  rl.Vector2
 }
 
 const INPUT_HEIGHT float32 = 40
 
-func Input(props InputProps) string {
+func (c *Components) Input(props InputProps) string {
 	rect := rl.NewRectangle(props.X, props.Y, props.Width, INPUT_HEIGHT)
 	rectInt32 := rect.ToInt32()
-	InputEvent(rect, props)
-	state := InputState(props)
+	InputEvent(rect, props, c)
+	state := InputState(props.Id, c)
 	borderColor := rl.White
 
 	switch state {
@@ -36,33 +35,35 @@ func Input(props InputProps) string {
 	}
 
 	isEmpty := props.Value == ""
-	var fontSize int32 = 16
+	var themeFontSize = theme.FontSize.Regular
+	var fontSize int32 = int32(themeFontSize)
 	var textY int32 = rectInt32.Y + (int32(rect.Height)-fontSize)/2
 	var textX int32 = rectInt32.X + 12
+	var textPos = rl.NewVector2(float32(textX), float32(textY))
 	if isEmpty && state != STATE_ACTIVE {
-		rl.DrawText(props.Placeholder, textX, textY, fontSize, rl.Fade(rl.White, 0.42))
+		lib.Typography(props.Placeholder, textPos, themeFontSize, theme.FontWeight.Regular, theme.Colors.SubText, c.typographyMap)
 	} else if !isEmpty {
-		rl.DrawText(props.Value, textX, textY, fontSize, rl.White)
+		lib.Typography(props.Value, textPos, themeFontSize, theme.FontWeight.Regular, theme.Colors.Text, c.typographyMap)
 	}
 
 	DrawRectangleRoundedLinePixels(rect, ROUNDED, 1, borderColor)
-	newValue := InputValueChange(props, state)
+	newValue := InputValueChange(props, state, c)
 
 	if rl.IsMouseButtonDown(rl.MouseButtonLeft) {
-		UpdateClickedCursorPosition(newValue, textX, fontSize, props)
+		UpdateClickedCursorPosition(newValue, textX, themeFontSize, c)
 	}
 
-	if state == STATE_ACTIVE && props.Ui.InputCursorStart == props.Ui.InputCursorEnd {
-		DrawCusor(props.Ui.InputCursorStart, newValue, textX, textY, fontSize, props.Ui)
+	if state == STATE_ACTIVE && c.ui.InputCursorStart == c.ui.InputCursorEnd {
+		DrawCusor(c.ui.InputCursorStart, newValue, textX, textY, themeFontSize, c)
 	}
 
 	return newValue
 }
 
-func UpdateClickedCursorPosition(value string, textX, fontSize int32, props InputProps) {
-	mousePoint := props.MousePoint
-	ui := props.Ui
-	totalTextWidth := rl.MeasureText(value, fontSize)
+func UpdateClickedCursorPosition(value string, textX int32, fontSize theme.Text, c *Components) {
+	mousePoint := c.mousePoint
+	ui := c.ui
+	totalTextWidth := lib.MeasureText(value, fontSize, theme.FontWeight.Regular, c.typographyMap)
 	if mousePoint.X >= float32(textX+totalTextWidth) {
 		ui.SetCursors(len(value))
 		return
@@ -77,7 +78,7 @@ func UpdateClickedCursorPosition(value string, textX, fontSize int32, props Inpu
 	index := 0
 	for index <= len(value)-1 {
 		char := value[index : index+1]
-		charSize := rl.MeasureText(char, fontSize)
+		charSize := lib.MeasureText(char, fontSize, theme.FontWeight.Regular, c.typographyMap)
 
 		if mousePoint.X >= float32(lastPos) && mousePoint.X <= float32(lastPos+charSize) {
 			if mousePoint.X > float32(lastPos+(charSize/2)) {
@@ -95,15 +96,15 @@ func UpdateClickedCursorPosition(value string, textX, fontSize int32, props Inpu
 	fmt.Println("uh oh")
 }
 
-func DrawCusor(position int, value string, textX, textY, fontSize int32, ui *lib.UIStruct) {
+func DrawCusor(position int, value string, textX, textY int32, fontSize theme.Text, c *Components) {
 	color := rl.Fade(rl.White, 0.6)
-	if ShouldBlink(ui) {
+	if ShouldBlink(c.ui) {
 		color = rl.White
 	}
 
-	x := textX + rl.MeasureText(value[:position], fontSize) + 1
+	x := textX + lib.MeasureText(value[:position], fontSize, theme.FontWeight.Regular, c.typographyMap) + 1
 	y := textY + 8
-	cursorHeight := fontSize - 6
+	cursorHeight := int32(fontSize) - 6
 	rl.DrawLine(x, y-cursorHeight, x, y+cursorHeight, color)
 }
 
@@ -124,6 +125,7 @@ func ShouldBlink(ui *lib.UIStruct) bool {
 	}
 	return false
 }
+
 func ShouldStayBlinked(ui *lib.UIStruct) bool {
 	ui.BlinkingTimer += rl.GetFrameTime()
 	if ui.BlinkingTimer > blinkInterval {
@@ -133,9 +135,9 @@ func ShouldStayBlinked(ui *lib.UIStruct) bool {
 	return true
 }
 
-func InputValueChange(props InputProps, state InteractableState) string {
+func InputValueChange(props InputProps, state InteractableState, c *Components) string {
 	value := props.Value
-	ui := props.Ui
+	ui := c.ui
 	if state != STATE_ACTIVE {
 		return value
 	}
@@ -176,10 +178,10 @@ func InputValueChange(props InputProps, state InteractableState) string {
 	return value
 }
 
-func InputEvent(rect rl.Rectangle, props InputProps) bool {
-	ui := props.Ui
+func InputEvent(rect rl.Rectangle, props InputProps, c *Components) bool {
+	ui := c.ui
 	id := props.Id
-	mousePoint := props.MousePoint
+	mousePoint := c.mousePoint
 	isFocused := id == ui.FocusedId
 	isInside := rl.CheckCollisionPointRec(mousePoint, rect)
 
@@ -223,9 +225,9 @@ func InputEvent(rect rl.Rectangle, props InputProps) bool {
 	return false
 }
 
-func InputState(props InputProps) InteractableState {
-	ui := props.Ui
-	switch props.Id {
+func InputState(id string, c *Components) InteractableState {
+	ui := c.ui
+	switch id {
 	case ui.FocusedId:
 		return STATE_ACTIVE
 	case ui.HotId:

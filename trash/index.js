@@ -1,7 +1,6 @@
-import path from "path/posix";
-import Realm from "realm";
+const path = require("path");
+const Realm = require("realm");
 
-// "C:\\Users\\carlo\\AppData\\Roaming\\osu"
 const args = {};
 
 process.argv.slice(2).forEach((arg) => {
@@ -25,7 +24,6 @@ async function parseLazerDatabase() {
   const songTable = new Map();
   const audioTable = new Map();
 
-  let i = 0;
   for (const beatmapSet of beatmapSets) {
     try {
       const beatmaps = beatmapSet.Beatmaps;
@@ -76,10 +74,6 @@ async function parseLazerDatabase() {
             continue;
           }
 
-          /* Note: in lots of places throughout the application, it relies on the song.path parameter, which in the
-            stable parser is the path of the folder that holds all the files. This folder doesn't exist in lazer's
-            file structure, so for now I'm just passing the audio location as the path parameter. In initial testing
-            this doesn't seem to break anything but just leaving this note in case it does */
           song.path = song.audio;
 
           const bgHash = beatmapSet.Files.find(
@@ -118,4 +112,4 @@ async function parseLazerDatabase() {
   process.exit();
 }
 
-await parseLazerDatabase();
+parseLazerDatabase().catch(console.error);

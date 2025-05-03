@@ -1,12 +1,11 @@
 package components
 
 import (
-	"database/sql"
 	"strconv"
 	"time"
 
-	dbManager "github.com/dudubtw/osu-radio-native/db-manager"
 	"github.com/dudubtw/osu-radio-native/lib"
+	"github.com/dudubtw/osu-radio-native/theme"
 	rl "github.com/gen2brain/raylib-go/raylib"
 )
 
@@ -27,59 +26,56 @@ func getMuteButtonIcon(ui *lib.UIStruct) IconName {
 	return ICON_VOLUME_HIGH
 }
 
-func DrawVolumeSlider(volume float32, enabled bool, ui *lib.UIStruct, textures *lib.Textures, mousePoint rl.Vector2) (bool, bool) {
+func DrawVolumeSlider(volume float32, enabled bool, c *Components) (bool, bool) {
 	// BG
-	y := (ui.ScreenH - int32(volumeSliderSize)) / 2
-	x := (ui.ScreenW - int32(volumeSliderSize)) - 20
+	y := (c.ui.ScreenH - int32(volumeSliderSize)) / 2
+	x := (c.ui.ScreenW - int32(volumeSliderSize)) - 20
 	rl.DrawCircle(x, y, volumeSliderSize, rl.Fade(rl.Black, 0.8))
 
 	// Text
 	textContent := strconv.Itoa(int(volume * 100))
-	var fontSize int32 = 40
-	textX := x - rl.MeasureText(textContent, fontSize)/2
+	var themeFontSize = theme.FontSize.ExtraSuperLarge
+	var fontSize int32 = int32(themeFontSize)
+	textX := x - lib.MeasureText(textContent, themeFontSize, theme.FontWeight.Bold, c.typographyMap)/2
 	textY := y - fontSize/2
-	rl.DrawText(textContent, textX, textY, fontSize, rl.White)
+	pos := rl.NewVector2(float32(textX), float32(textY))
+	lib.Typography(textContent, pos, themeFontSize, theme.FontWeight.Bold, theme.Colors.Text, c.typographyMap)
 
 	// Progress ring
 	center := rl.NewVector2(float32(x), float32(y))
 	progressInnerRadius := volumeSliderSize - volumeSliderProgressWidth - volumeSliderProgressPadding
 	progressOuterRadius := volumeSliderSize - volumeSliderProgressPadding
-	scale := lib.NewLinearScale([2]float32{0, 1}, [2]float32{startAngle, endAngle})
+	scale := lib.NewLinearScale([]float32{0, 1}, []float32{startAngle, endAngle})
 	rl.DrawRing(center, progressInnerRadius, progressOuterRadius, startAngle, scale(volume), 0, rl.Pink)
 
 	// Mute button
 	var muteX float32 = float32(x) - ICON_BUTTON_SIZE_GHOST/2
 	var muteY float32 = float32(y) + volumeSliderSize - ICON_BUTTON_SIZE_GHOST - volumeSliderProgressPadding - volumeSliderProgressWidth - muteButtonBottomPadding
-	isClicked := IconButton("volume-mute", getMuteButtonIcon(ui), ICON_BUTTON_GHOST, rl.NewRectangle(muteX, muteY, 0, 0), ui, textures, mousePoint)
-	isMouseInside := lib.CheckCollisionPointCircle(x, y, volumeSliderSize, mousePoint)
+	isClicked := c.IconButton("volume-mute", getMuteButtonIcon(c.ui), ICON_BUTTON_GHOST, rl.NewRectangle(muteX, muteY, 0, 0))
+	isMouseInside := lib.CheckCollisionPointCircle(x, y, volumeSliderSize, c.mousePoint)
 	return isClicked, isMouseInside
 }
 
-func VolumeSlider(volume float32, enabled bool, ui *lib.UIStruct, textures *lib.Textures, mousePoint rl.Vector2, db *sql.DB) (float32, bool) {
+func (c *Components) VolumeSlider(volume float32, enabled bool) (float32, bool, bool) {
 	isMuteClicked := false
 	isMouseInside := false
 	now := time.Now()
-	if now.Sub(ui.LastTimeScrolled) < hideDuration {
-		isMuteClicked, isMouseInside = DrawVolumeSlider(volume, enabled, ui, textures, mousePoint)
+	if now.Sub(c.ui.LastTimeScrolled) < hideDuration {
+		isMuteClicked, isMouseInside = DrawVolumeSlider(volume, enabled, c)
 	}
 
 	if !enabled {
-		return volume, isMuteClicked
+		return volume, isMuteClicked, false
 	}
 
 	// Calculate new volume
 	mouseMovment := rl.GetMouseWheelMove()
 	hasChangedVolume := mouseMovment != 0
 	if hasChangedVolume || isMuteClicked || isMouseInside {
-		ui.LastTimeScrolled = time.Now()
+		c.ui.LastTimeScrolled = time.Now()
 	}
 
 	newVolume := lib.Clamp(volume+mouseMovment*float32(scrollSpeed), 0, 1)
 
-	if hasChangedVolume {
-		go func() {
-			dbManager.UpdateVolume(db, int(100*newVolume))
-		}()
-	}
-	return newVolume, isMuteClicked
+	return newVolume, isMuteClicked, hasChangedVolume
 }

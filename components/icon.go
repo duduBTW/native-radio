@@ -74,10 +74,10 @@ func IconButtonPosition(name IconName, variant IconButtonVariant, position rl.Re
 	return rl.NewRectangle(position.X, position.Y, buttonSize, buttonSize)
 }
 
-func IconButton(id string, name IconName, variant IconButtonVariant, position rl.Rectangle, ui *lib.UIStruct, textures *lib.Textures, mousePoint rl.Vector2) bool {
+func (c *Components) IconButton(id string, name IconName, variant IconButtonVariant, position rl.Rectangle) bool {
 	buttonRect := IconButtonPosition(name, variant, position)
-	interactable := NewInteractable(id, ui)
-	clicked := interactable.Event(mousePoint, buttonRect)
+	interactable := NewInteractable(id, c.ui)
+	clicked := interactable.Event(c.mousePoint, buttonRect)
 	state := interactable.State()
 
 	var borderRadius float32 = 0
@@ -119,7 +119,7 @@ func IconButton(id string, name IconName, variant IconButtonVariant, position rl
 	}
 
 	rl.DrawRectangleRounded(buttonRect, borderRadius, segments, color)
-	DrawIcon(name, rl.NewVector2(position.X+(buttonRect.Width-ICON_SIZE)/2, position.Y+(buttonRect.Height-ICON_SIZE)/2), textures)
+	DrawIcon(name, rl.NewVector2(position.X+(buttonRect.Width-ICON_SIZE)/2, position.Y+(buttonRect.Height-ICON_SIZE)/2), &c.textures)
 
 	return clicked
 }

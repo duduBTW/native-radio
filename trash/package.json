@@ -1,7 +1,15 @@
 {
-  "name": "trash",
-  "module": "index.ts",
-  "type": "module",
+  "name": "lazer-parser",
+  "version": "1.0.0",
+  "main": "index.js",
+  "bin": "index.js",
+  "type": "commonjs",
+  "pkg": {
+    "targets": ["node16-win-x64"],
+    "assets": [
+      "node_modules/realm/**/*"
+    ]
+  },
   "devDependencies": {
     "@types/bun": "latest"
   },
@@ -9,6 +17,10 @@
     "typescript": "^5.0.0"
   },
   "dependencies": {
+    "nexe": "^5.0.0-beta.4",
     "realm": "^12.14.2"
+  },
+  "scripts": {
+    "build": "nexe index.js --build --resource \"node_modules/realm/**/*\" -o lazer-parser.exe"
   }
 }

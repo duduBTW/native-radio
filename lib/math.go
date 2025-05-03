@@ -53,16 +53,33 @@ func MaxInt(value, max int) int {
 	return value
 }
 
-func NewLinearScale(domain, base [2]float32) func(value float32) float32 {
-	dStart := domain[0]
-	dEnd := domain[1]
-
-	bStart := base[0]
-	bEnd := base[1]
+func NewLinearScale(domain, base []float32) func(value float32) float32 {
+	if len(domain) != len(base) || len(domain) < 2 {
+		panic("domain and base must be of equal length and have at least two points")
+	}
 
 	return func(value float32) float32 {
-		percent := (value - dStart) / (dEnd - dStart)
-		return bStart + percent*(bEnd-bStart)
+		// Handle values outside the domain range (extrapolation)
+		if value <= domain[0] {
+			return base[0]
+		}
+		if value >= domain[len(domain)-1] {
+			return base[len(base)-1]
+		}
+
+		// Find the correct interval
+		for i := 0; i < len(domain)-1; i++ {
+			dStart, dEnd := domain[i], domain[i+1]
+			if value >= dStart && value <= dEnd {
+				// Corresponding base interval
+				bStart, bEnd := base[i], base[i+1]
+				percent := (value - dStart) / (dEnd - dStart)
+				return bStart + percent*(bEnd-bStart)
+			}
+		}
+
+		// Should never reach here if domain is sorted and value is within range
+		panic("value out of interpolation range")
 	}
 }
 

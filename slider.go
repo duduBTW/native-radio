@@ -2,6 +2,7 @@ package main
 
 import (
 	c "github.com/dudubtw/osu-radio-native/components"
+	"github.com/dudubtw/osu-radio-native/lib"
 	rl "github.com/gen2brain/raylib-go/raylib"
 )
 
@@ -21,7 +22,7 @@ const (
 )
 
 type Thumb struct {
-	Size      Size
+	Size      lib.Size
 	Offset    rl.Vector2
 	Roundness c.Roundness
 }
@@ -50,14 +51,14 @@ func IsItemDeactivatedAfterEdit() bool {
 	return temp
 }
 
-func SliderValue(slider SliderProps) (float32, float32) {
+func SliderWidth(slider SliderProps) (float32, float32) {
 	var totalProgressRect = slider.Rect.Width - (slider.Padding * 2)
 	var valueWidth = totalProgressRect * slider.Value
 	return totalProgressRect, valueWidth
 }
 
-func SliderThumbRect(slider SliderProps) rl.Rectangle {
-	_, valueWidth := SliderValue(slider)
+func HorizontalSliderThumbRect(slider SliderProps) rl.Rectangle {
+	_, valueWidth := SliderWidth(slider)
 	rect := slider.Rect
 	thumb := slider.Thumb
 
@@ -65,6 +66,28 @@ func SliderThumbRect(slider SliderProps) rl.Rectangle {
 	return rl.Rectangle{
 		X:      rect.X + valueWidth - thumb.Offset.X,
 		Y:      rect.Y - thumb.Offset.Y,
+		Width:  thumb.Size.Width + thumb.Offset.X,
+		Height: thumb.Size.Height + (thumb.Offset.Y * 2),
+	}
+}
+
+func SliderHeight(slider SliderProps) (float32, float32) {
+	var totalProgressRect = slider.Rect.Height - (slider.Padding * 2)
+	var valueWidth = totalProgressRect * slider.Value
+	return totalProgressRect, valueWidth
+}
+
+func VerticalSliderThumbRect(slider SliderProps) rl.Rectangle {
+	total, valueHeight := SliderHeight(slider)
+	rect := slider.Rect
+	thumb := slider.Thumb
+
+	offsetScale := lib.NewLinearScale([]float32{0, total}, []float32{0, -thumb.Size.Height})
+
+	// CHECK: X OFFSET MAY BE BROKENGE DIDNT TEST IT
+	return rl.Rectangle{
+		X:      rect.X - thumb.Offset.X,
+		Y:      rect.Y + valueHeight - thumb.Offset.Y + offsetScale(valueHeight),
 		Width:  thumb.Size.Width + thumb.Offset.X,
 		Height: thumb.Size.Height + (thumb.Offset.Y * 2),
 	}
@@ -79,14 +102,15 @@ type SliderProps struct {
 	Thumb        Thumb
 	Color        rl.Color
 	Direction    SliderDirection
+	TrackColor   rl.Color
 }
 
 func Slider(slider SliderProps) float32 {
 	SliderEventHandler(slider)
 	state := SliderStateHandler(slider)
-	c.DrawRectangleRoundedPixels(slider.Rect, slider.BorderRadius, rl.Fade(rl.Black, 0.8))
+	c.DrawRectangleRoundedPixels(slider.Rect, slider.BorderRadius, slider.TrackColor)
 
-	totalProgressRect, valueWidth := SliderValue(slider)
+	totalProgressRect, valueWidth := SliderWidth(slider)
 	progressRect := rl.Rectangle{
 		X:      slider.Rect.X + slider.Padding,
 		Y:      slider.Rect.Y + slider.Padding,
@@ -107,7 +131,14 @@ func Slider(slider SliderProps) float32 {
 		thumbColor = rl.LightGray
 	}
 
-	thumbRect := SliderThumbRect(slider)
+	var thumbRect rl.Rectangle
+	switch slider.Direction {
+	case SLIDER_DIRECTION_HORIZONTAL:
+		thumbRect = HorizontalSliderThumbRect(slider)
+	case SLIDER_DIRECTION_VERTICAL:
+		thumbRect = VerticalSliderThumbRect(slider)
+	}
+
 	c.DrawRectangleRoundedPixels(thumbRect, slider.Thumb.Roundness, thumbColor)
 	newValue := SliderValueHanlder(slider)
 	return newValue

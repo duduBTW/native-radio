@@ -5,7 +5,9 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"path/filepath"
 
+	"github.com/dudubtw/osu-radio-native/components"
 	dbManager "github.com/dudubtw/osu-radio-native/db-manager"
 	"github.com/dudubtw/osu-radio-native/lib"
 	rl "github.com/gen2brain/raylib-go/raylib"
@@ -18,8 +20,10 @@ var ui lib.UIStruct
 var shaders lib.Shaders
 var mousePoint rl.Vector2
 var db *sql.DB
+var typographyMap lib.TypographyMap
+var comp components.Components
 
-func SetVolume(newVolume float32, wasMuteClicked bool) {
+func SetVolume(newVolume float32, wasMuteClicked bool, hasChangedVolume bool) {
 	ui.Volume = newVolume
 	if wasMuteClicked {
 		ui.IsMuted = !ui.IsMuted
@@ -29,6 +33,12 @@ func SetVolume(newVolume float32, wasMuteClicked bool) {
 		music.SetVolume(0)
 	} else {
 		music.SetVolume(newVolume)
+	}
+
+	if hasChangedVolume {
+		go func() {
+			dbManager.UpdateVolume(db, int(100*newVolume))
+		}()
 	}
 }
 func UpdateSong() {
@@ -52,16 +62,29 @@ func Shuffle() {
 }
 func ExecTrash(lazerFilePath string) {
 	go func() {
-		cmd := exec.Command("node", "D:\\Peronal\\native-radio\\trash\\index.js", "--lazer="+lazerFilePath)
+		// Get the executable path relative to the application
+		execPath := "resources/lazer-parser.exe"
+		if !filepath.IsAbs(execPath) {
+			// Get the directory where your Go executable is running
+			dir, err := os.Executable()
+			if err != nil {
+				fmt.Println("Error getting executable path:", err)
+				return
+			}
+			execPath = filepath.Join(filepath.Dir(dir), execPath)
+		}
+
+		fmt.Println("running", execPath, "--lazer="+lazerFilePath)
+		cmd := exec.Command(execPath, "--lazer="+lazerFilePath)
 		stdout, err := cmd.Output()
 		if err != nil {
-			fmt.Println(err)
+			fmt.Println("Error running parser:", err)
 			return
 		}
 
 		songMap, err := lib.ParseNodeOutput(stdout)
 		if err != nil {
-			fmt.Println(err)
+			fmt.Println("Error parsing output:", err)
 			return
 		}
 
@@ -81,7 +104,6 @@ func ExecTrash(lazerFilePath string) {
 		ui.SelectedPage = lib.PAGE_HOME
 	}()
 }
-
 func UpdateSongList() {
 	go func() {
 		songs, containsIndex, err := dbManager.SelectAllSongs(db, ui.SearchValue, songTable.SelectedSong().ID)
@@ -123,8 +145,8 @@ func InitEverything() {
 	ui = lib.NewUi(table)
 	textures = lib.NewTexture(table)
 	shaders = lib.NewShaders()
-
-	fmt.Print("Page", ui.SelectedPage)
+	typographyMap = lib.InitTypography()
+	comp = components.NewComponents(&ui, textures, typographyMap)
 
 	if len(table.Songs) == 0 {
 		return
@@ -138,6 +160,7 @@ func main() {
 	fmt.Println("Process ID:", os.Getpid())
 
 	rl.SetConfigFlags(rl.FlagWindowResizable)
+	rl.SetConfigFlags(rl.FlagMsaa4xHint)
 	rl.SetConfigFlags(rl.FlagBorderlessWindowedMode)
 	rl.InitWindow(1400, 1000, "osu! radio")
 	defer rl.CloseWindow()
@@ -151,6 +174,7 @@ func main() {
 		ui.ScreenW = int32(rl.GetScreenWidth())
 		ui.ScreenH = int32(rl.GetScreenHeight())
 		mousePoint = rl.GetMousePosition()
+		comp.Update(mousePoint)
 
 		shaders.Blur.Update(mousePoint, &ui)
 

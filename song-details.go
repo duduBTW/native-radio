@@ -3,37 +3,40 @@ package main
 import (
 	"strconv"
 
-	"github.com/dudubtw/osu-radio-native/components"
 	c "github.com/dudubtw/osu-radio-native/components"
+	"github.com/dudubtw/osu-radio-native/lib"
+	"github.com/dudubtw/osu-radio-native/theme"
 	rl "github.com/gen2brain/raylib-go/raylib"
 )
 
-func SongDetails(rect rl.Rectangle) {
-	isVolumeSliderActive := rl.CheckCollisionPointRec(mousePoint, rect)
-	originalRect := rect.Width
-	rect.Width = Min(1000, rect.Width)
+func SongDetails(typographyMap lib.TypographyMap) func(rect rl.Rectangle) {
+	return func(rect rl.Rectangle) {
+		isVolumeSliderActive := rl.CheckCollisionPointRec(mousePoint, rect)
+		originalRect := rect.Width
+		rect.Width = lib.Min(1000, rect.Width)
 
-	if originalRect != rect.Width {
-		rect.X += (originalRect - rect.Width) / 2
+		if originalRect != rect.Width {
+			rect.X += (originalRect - rect.Width) / 2
+		}
+
+		padding := lib.Padding{}
+		padding.All(94)
+		var container = lib.NewConstrainedLayout(lib.ContrainedLayout{
+			Direction: lib.DIRECTION_COLUMN,
+			Padding:   padding,
+			Contrains: rect,
+			Gap:       4,
+			ChildrenSize: []lib.ChildSize{
+				{SizeType: lib.SIZE_WEIGHT, Value: 1},
+				{SizeType: lib.SIZE_ABSOLUTE, Value: 184},
+			},
+		})
+
+		container.Render(SongMiniature)
+		container.Render(SongControls(typographyMap))
+
+		SetVolume(comp.VolumeSlider(ui.Volume, isVolumeSliderActive))
 	}
-
-	padding := Padding{}
-	padding.All(94)
-	var container = NewConstrainedLayout(ContrainedLayout{
-		Direction: DIRECTION_COLUMN,
-		Padding:   padding,
-		Contrains: rect,
-		Gap:       4,
-		ChildrenSize: []ChildSize{
-			{SizeType: SIZE_WEIGHT, Value: 1},
-			{SizeType: SIZE_ABSOLUTE, Value: 184},
-		},
-	})
-
-	container.Render(SongMiniature)
-	container.Render(SongControls)
-
-	SetVolume(components.VolumeSlider(ui.Volume, isVolumeSliderActive, &ui, &textures, mousePoint, db))
 }
 
 func SongMiniature(rect rl.Rectangle) {
@@ -54,15 +57,17 @@ func SongMiniature(rect rl.Rectangle) {
 	rl.EndShaderMode()
 }
 
-func SongControls(rect rl.Rectangle) {
-	var container = NewLayout(Layout{
-		Direction: DIRECTION_COLUMN,
-		Gap:       16,
-	}, rect)
+func SongControls(typographyMap lib.TypographyMap) func(rect rl.Rectangle) {
+	return func(rect rl.Rectangle) {
+		var container = lib.NewLayout(lib.Layout{
+			Direction: lib.DIRECTION_COLUMN,
+			Gap:       16,
+		}, rect)
 
-	container.Render(SongControlTexts)
-	container.Render(SongProgress)
-	container.Render(SongControlButton)
+		container.Render(SongControlTexts)
+		container.Render(SongProgress(typographyMap))
+		container.Render(SongControlButton)
+	}
 }
 
 func durationFromSeconds(seconds int) string {
@@ -76,90 +81,94 @@ func durationFromSeconds(seconds int) string {
 	return minutes + ":" + resultSeconds
 }
 
-func SongProgress(position Position, next Next) {
-	if !songTable.HasSelectedSong() {
-		return
-	}
+func SongProgress(typographyMap lib.TypographyMap) func(avaliablePosition lib.Position, next lib.Next) {
+	return func(position lib.Position, next lib.Next) {
+		if !songTable.HasSelectedSong() {
+			return
+		}
 
-	rect := position.ToRect(position.Contrains.Width, 28)
-	rectInt32 := rect.ToInt32()
+		rect := position.ToRect(position.Contrains.Width, 28)
 
-	sliderProps := SliderProps{
-		Value:        music.Progress(),
-		Rect:         rect,
-		Padding:      4,
-		BorderRadius: c.ROUNDED,
-		Thumb: Thumb{
-			Size: Size{
-				Width:  6,
-				Height: rect.Height,
+		sliderProps := SliderProps{
+			Value:        music.Progress(),
+			Rect:         rect,
+			Padding:      4,
+			BorderRadius: c.ROUNDED,
+			Thumb: Thumb{
+				Size: lib.Size{
+					Width:  6,
+					Height: rect.Height,
+				},
+				Offset: rl.Vector2{
+					X: 0,
+					Y: 4,
+				},
+				Roundness: 3,
 			},
-			Offset: rl.Vector2{
-				X: 0,
-				Y: 4,
-			},
-			Roundness: 3,
-		},
-		Color: rl.Pink,
-		Id:    "progress-slider",
-	}
-	newSliderValue := Slider(sliderProps)
+			Color:      rl.Pink,
+			TrackColor: rl.Fade(rl.Black, 0.8),
+			Id:         "progress-slider",
+		}
+		newSliderValue := Slider(sliderProps)
 
-	if IsItemActivated() {
-		music.BeginSeekMode()
-	}
+		if IsItemActivated() {
+			music.BeginSeekMode()
+		}
 
-	if IsItemDeactivatedAfterEdit() {
-		music.ExitSeekMode()
-	}
+		if IsItemDeactivatedAfterEdit() {
+			music.ExitSeekMode()
+		}
 
-	if IsActive() {
-		music.Seek(newSliderValue)
-	}
+		if IsActive() {
+			music.Seek(newSliderValue)
+		}
 
-	thumbRect := SliderThumbRect(sliderProps)
-	progressSecongs := int(rl.GetMusicTimeLength(*music.Selected) * sliderProps.Value)
-	thumbRectInt := thumbRect.ToInt32()
-	progressText := durationFromSeconds(progressSecongs)
-	var progressFontSize int32 = 14
-	var progressTextPaddingHorizontal int32 = 12
-	var progressTextY int32 = rectInt32.Y + (rectInt32.Height-progressFontSize)/2
+		thumbRect := HorizontalSliderThumbRect(sliderProps)
+		progressSecongs := int(rl.GetMusicTimeLength(*music.Selected) * sliderProps.Value)
+		progressText := durationFromSeconds(progressSecongs)
+		var progressFontSize = theme.FontSize.Regular
+		var progressFontWeight = theme.FontWeight.Bold
+		var progressTextPaddingHorizontal float32 = 12
+		var progressTextY float32 = rect.Y + (rect.Height-float32(progressFontSize))/2
+		var textWidth = float32(lib.MeasureText(progressText, progressFontSize, progressFontWeight, typographyMap))
 
-	rl.DrawText(progressText,
-		MaxInt32(thumbRectInt.X-thumbRectInt.Width-rl.MeasureText(progressText, progressFontSize), rectInt32.X+progressTextPaddingHorizontal),
-		progressTextY,
-		progressFontSize,
-		rl.White,
-	)
-
-	totalText := durationFromSeconds(int(rl.GetMusicTimeLength(*music.Selected)))
-	var totalTextX int32 = rectInt32.X + rectInt32.Width - rl.MeasureText(totalText, progressFontSize) - progressTextPaddingHorizontal
-	const hideTOtalTextOffset int32 = 4
-	if totalTextX > thumbRectInt.X+thumbRectInt.Width+hideTOtalTextOffset {
-		rl.DrawText(totalText,
-			totalTextX,
+		progressPos := rl.NewVector2(
+			lib.Max(
+				thumbRect.X-thumbRect.Width-textWidth,
+				rect.X+progressTextPaddingHorizontal,
+			),
 			progressTextY,
-			progressFontSize,
-			rl.White,
 		)
-	}
 
-	next(rect)
+		lib.Typography(progressText, progressPos, progressFontSize, progressFontWeight, theme.Colors.Text, typographyMap)
+
+		totalText := durationFromSeconds(int(rl.GetMusicTimeLength(*music.Selected)))
+		totalFontWeight := theme.FontWeight.Regular
+		var totalTextWidth = float32(lib.MeasureText(totalText, progressFontSize, totalFontWeight, typographyMap))
+		var totalTextX float32 = rect.X + rect.Width - totalTextWidth - progressTextPaddingHorizontal
+		const hideTOtalTextOffset float32 = 4
+		if totalTextX > thumbRect.X+thumbRect.Width+hideTOtalTextOffset {
+			totalPos := rl.NewVector2(totalTextX, progressTextY)
+			lib.Typography(totalText, totalPos, progressFontSize, totalFontWeight, theme.Colors.SubText, typographyMap)
+		}
+
+		next(rect)
+	}
 }
 
-func SongControlButton(position Position, next Next) {
+func SongControlButton(position lib.Position, next lib.Next) {
 	rect := position.ToRect(position.Contrains.Width, 52)
 
-	container := NewConstrainedLayout(ContrainedLayout{
-		Direction: DIRECTION_ROW,
+	container := lib.NewConstrainedLayout(lib.ContrainedLayout{
+		Direction: lib.DIRECTION_ROW,
 		Gap:       12,
-		ChildrenSize: []ChildSize{
-			{SizeType: SIZE_ABSOLUTE, Value: c.ICON_BUTTON_SIZE_GHOST},
-			{SizeType: SIZE_ABSOLUTE, Value: c.ICON_BUTTON_SIZE_PRIMARY},
-			{SizeType: SIZE_WEIGHT, Value: 1.0},
-			{SizeType: SIZE_ABSOLUTE, Value: c.ICON_BUTTON_SIZE_GHOST},
-			{SizeType: SIZE_ABSOLUTE, Value: c.ICON_BUTTON_SIZE_GHOST},
-			{SizeType: SIZE_ABSOLUTE, Value: c.ICON_BUTTON_SIZE_GHOST},
+		ChildrenSize: []lib.ChildSize{
+			{SizeType: lib.SIZE_ABSOLUTE, Value: c.ICON_BUTTON_SIZE_GHOST},
+			{SizeType: lib.SIZE_ABSOLUTE, Value: c.ICON_BUTTON_SIZE_PRIMARY},
+			{SizeType: lib.SIZE_WEIGHT, Value: 1.0},
+			{SizeType: lib.SIZE_ABSOLUTE, Value: c.ICON_BUTTON_SIZE_GHOST},
+			{SizeType: lib.SIZE_ABSOLUTE, Value: c.ICON_BUTTON_SIZE_GHOST},
+			{SizeType: lib.SIZE_ABSOLUTE, Value: c.ICON_BUTTON_SIZE_GHOST},
 		},
 		Contrains: rect,
 	})
@@ -173,7 +182,7 @@ func SongControlButton(position Position, next Next) {
 		return iconRect
 	}
 
-	if c.IconButton("c-play2", c.ICON_PLAYER_PREVIOUS, c.ICON_BUTTON_GHOST, ghostWithOffset(container.Render(nil)), &ui, &textures, mousePoint) {
+	if comp.IconButton("c-play2", c.ICON_PLAYER_PREVIOUS, c.ICON_BUTTON_GHOST, ghostWithOffset(container.Render(nil))) {
 		music.Previous(&songTable)
 		UpdateSong()
 	}
@@ -182,46 +191,46 @@ func SongControlButton(position Position, next Next) {
 	if isPlaying {
 		iconName = c.ICON_PAUSE
 	}
-	if c.IconButton("c-play", iconName, c.ICON_BUTTON_PRIMARY, container.Render(nil), &ui, &textures, mousePoint) {
+	if comp.IconButton("c-play", iconName, c.ICON_BUTTON_PRIMARY, container.Render(nil)) {
 		if isPlaying {
 			music.Pause()
 		} else {
 			music.Play()
 		}
 	}
-	if c.IconButton("c-play3", c.ICON_PLAYER_NEXT, c.ICON_BUTTON_GHOST, ghostWithOffset(container.Render(nil)), &ui, &textures, mousePoint) {
+	if comp.IconButton("c-play3", c.ICON_PLAYER_NEXT, c.ICON_BUTTON_GHOST, ghostWithOffset(container.Render(nil))) {
 		music.Next(&songTable)
 		UpdateSong()
 	}
 
-	c.IconButton("repeat", c.ICON_REPEAT, c.ICON_BUTTON_GHOST, ghostWithOffset(container.Render(nil)), &ui, &textures, mousePoint)
-	if c.IconButton("shuffle", c.ICON_SHUFFLE, c.ICON_BUTTON_GHOST, ghostWithOffset(container.Render(nil)), &ui, &textures, mousePoint) {
+	comp.IconButton("repeat", c.ICON_REPEAT, c.ICON_BUTTON_GHOST, ghostWithOffset(container.Render(nil)))
+	if comp.IconButton("shuffle", c.ICON_SHUFFLE, c.ICON_BUTTON_GHOST, ghostWithOffset(container.Render(nil))) {
 		Shuffle()
 	}
 
-	c.IconButton("add-playlist", c.ICON_ADD_CIRCLE, c.ICON_BUTTON_GHOST, ghostWithOffset(container.Render(nil)), &ui, &textures, mousePoint)
+	comp.IconButton("add-playlist", c.ICON_ADD_CIRCLE, c.ICON_BUTTON_GHOST, ghostWithOffset(container.Render(nil)))
 
 	next(rect)
 }
 
-func SongControlTexts(position Position, next Next) {
-	var container = NewLayout(Layout{
-		Direction: DIRECTION_COLUMN,
+func SongControlTexts(position lib.Position, next lib.Next) {
+	var container = lib.NewLayout(lib.Layout{
+		Direction: lib.DIRECTION_COLUMN,
 		Gap:       4,
 	}, position.ToRect(position.Contrains.Width, position.Contrains.Height))
 
 	// FIXME - Line height
-	container.Render(SongControlText(songTable.SelectedSong().Title, 28))
-	container.Render(SongControlText(songTable.SelectedSong().Artist, 16))
+	container.Render(SongControlText(songTable.SelectedSong().Title, theme.FontSize.ExtraLarge, theme.FontWeight.Bold, theme.Colors.Text))
+	container.Render(SongControlText(songTable.SelectedSong().Artist, theme.FontSize.Regular, theme.FontWeight.Regular, theme.Colors.SubText))
 
 	// FIXME - Getting the height of children after, is this ok? prob not right, at least it is weird rn
 	next(position.ToRect(position.Contrains.Width, container.Size.Height))
 }
 
-func SongControlText(text string, fontSize float32) Component {
-	return func(position Position, next Next) {
-		font := rl.GetFontDefault()
-		textHeight := DrawTextByWidth(font, text, rl.NewVector2(position.X, position.Y), position.Contrains.Width, fontSize, 2, rl.White)
-		next(position.ToRect(position.Contrains.Width, textHeight))
+func SongControlText(text string, fontSize theme.Text, weight theme.Weight, color rl.Color) lib.Component {
+	return func(position lib.Position, next lib.Next) {
+		pos := rl.NewVector2(position.X, position.Y)
+		lib.Typography(text, pos, fontSize, weight, color, typographyMap)
+		next(position.ToRect(position.Contrains.Width, float32(fontSize)))
 	}
 }

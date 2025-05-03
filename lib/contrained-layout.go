@@ -1,4 +1,4 @@
-package main
+package lib
 
 import (
 	"errors"
@@ -84,9 +84,9 @@ func (layout *ContrainedLayout) ComputeChildren() error {
 	var weightSum float32 = 0
 	var weightSizes = make(map[Index]float32)
 	var computedSizes = make([]float32, len(layout.ChildrenSize))
-	for index, childSize := range layout.ChildrenSize {
-		value := childSize.Value
-		if childSize.SizeType == SIZE_WEIGHT {
+	for index, ChildSize := range layout.ChildrenSize {
+		value := ChildSize.Value
+		if ChildSize.SizeType == SIZE_WEIGHT {
 			weightSizes[index] = value
 			weightSum += value
 			continue

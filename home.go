@@ -3,6 +3,7 @@ package main
 import (
 	c "github.com/dudubtw/osu-radio-native/components"
 	"github.com/dudubtw/osu-radio-native/lib"
+	"github.com/dudubtw/osu-radio-native/theme"
 	rl "github.com/gen2brain/raylib-go/raylib"
 )
 
@@ -37,19 +38,19 @@ func HomePage() {
 	}
 
 	// Components
-	padding := Padding{}
-	var home = NewConstrainedLayout(ContrainedLayout{
+	padding := lib.Padding{}
+	var home = lib.NewConstrainedLayout(lib.ContrainedLayout{
 		Contrains: rl.Rectangle{Width: float32(ui.ScreenW), Height: float32(ui.ScreenH), X: 0, Y: 0},
-		Direction: DIRECTION_ROW,
+		Direction: lib.DIRECTION_ROW,
 		Padding:   padding,
-		ChildrenSize: []ChildSize{
-			{SizeType: SIZE_ABSOLUTE, Value: 520},
-			{SizeType: SIZE_WEIGHT, Value: 1},
+		ChildrenSize: []lib.ChildSize{
+			{SizeType: lib.SIZE_ABSOLUTE, Value: 520},
+			{SizeType: lib.SIZE_WEIGHT, Value: 1},
 		},
 	})
 
-	home.Render(Panel())
-	home.Render(SongDetails)
+	home.Render(Panel)
+	home.Render(SongDetails(typographyMap))
 }
 
 func BackgroundImage() {
@@ -59,44 +60,42 @@ func BackgroundImage() {
 	rl.DrawRectangle(0, 0, ui.ScreenW, ui.ScreenH, rl.NewColor(18, 18, 18, 209))
 }
 
-func Panel() ContrainedComponent {
-	return func(rect rl.Rectangle) {
-		rl.DrawRectanglePro(rect, rl.Vector2{}, 0, rl.Fade(rl.Black, 0.42))
-		padding := Padding{}
-		padding.Axis(20, 24)
-		padding.Bottom(0)
-		var container = NewConstrainedLayout(ContrainedLayout{
-			Direction: DIRECTION_COLUMN,
-			Padding:   padding,
-			Gap:       20,
-			Contrains: rect,
-			ChildrenSize: []ChildSize{
-				{SizeType: SIZE_ABSOLUTE, Value: 42},
-				{SizeType: SIZE_ABSOLUTE, Value: 40},
-				{SizeType: SIZE_WEIGHT, Value: 1},
-			},
-		})
+func Panel(rect rl.Rectangle) {
+	rl.DrawRectanglePro(rect, rl.Vector2{}, 0, rl.Fade(rl.Black, 0.42))
+	padding := lib.Padding{}
+	padding.Axis(20, 24)
+	padding.Bottom(0)
+	var container = lib.NewConstrainedLayout(lib.ContrainedLayout{
+		Direction: lib.DIRECTION_COLUMN,
+		Padding:   padding,
+		Gap:       20,
+		Contrains: rect,
+		ChildrenSize: []lib.ChildSize{
+			{SizeType: lib.SIZE_ABSOLUTE, Value: 42},
+			{SizeType: lib.SIZE_ABSOLUTE, Value: 40},
+			{SizeType: lib.SIZE_WEIGHT, Value: 1},
+		},
+	})
 
-		container.Render(UpperPart)
-		container.Render(Filters)
+	container.Render(UpperPart)
+	container.Render(Filters)
 
-		switch ui.SelectedPanelPage {
-		case lib.PANEL_PAGE_SONGS:
-			container.Render(SongList())
+	switch ui.SelectedPanelPage {
+	case lib.PANEL_PAGE_SONGS:
+		container.Render(SongList())
 
-		}
 	}
 }
 
 func UpperPart(rect rl.Rectangle) {
-	var container = NewConstrainedLayout(ContrainedLayout{
-		Direction: DIRECTION_ROW,
+	var container = lib.NewConstrainedLayout(lib.ContrainedLayout{
+		Direction: lib.DIRECTION_ROW,
 		Gap:       16,
 		Contrains: rect,
-		ChildrenSize: []ChildSize{
-			{SizeType: SIZE_ABSOLUTE, Value: c.ICON_BUTTON_SIZE_GHOST},
-			{SizeType: SIZE_WEIGHT, Value: 1},
-			{SizeType: SIZE_ABSOLUTE, Value: c.ICON_BUTTON_SIZE_GHOST},
+		ChildrenSize: []lib.ChildSize{
+			{SizeType: lib.SIZE_ABSOLUTE, Value: c.ICON_BUTTON_SIZE_GHOST},
+			{SizeType: lib.SIZE_WEIGHT, Value: 1},
+			{SizeType: lib.SIZE_ABSOLUTE, Value: c.ICON_BUTTON_SIZE_GHOST},
 		},
 	})
 
@@ -106,13 +105,13 @@ func UpperPart(rect rl.Rectangle) {
 }
 
 func Filters(rect rl.Rectangle) {
-	layout := NewConstrainedLayout(ContrainedLayout{
-		Direction: DIRECTION_ROW,
+	layout := lib.NewConstrainedLayout(lib.ContrainedLayout{
+		Direction: lib.DIRECTION_ROW,
 		Contrains: rect,
 		Gap:       12,
-		ChildrenSize: []ChildSize{
-			{SizeType: SIZE_WEIGHT, Value: 1},
-			{SizeType: SIZE_ABSOLUTE, Value: c.ICON_BUTTON_SIZE_GHOST},
+		ChildrenSize: []lib.ChildSize{
+			{SizeType: lib.SIZE_WEIGHT, Value: 1},
+			{SizeType: lib.SIZE_ABSOLUTE, Value: c.ICON_BUTTON_SIZE_GHOST},
 		},
 	})
 
@@ -121,14 +120,12 @@ func Filters(rect rl.Rectangle) {
 }
 
 func SearchInput(rect rl.Rectangle) {
-	newSearchValue := c.Input(c.InputProps{
+	newSearchValue := comp.Input(c.InputProps{
 		X:           rect.X,
 		Y:           rect.Y,
 		Width:       rect.Width,
 		Placeholder: "Search in your songs...",
 		Id:          "search",
-		Ui:          &ui,
-		MousePoint:  mousePoint,
 		Value:       ui.SearchValue,
 	})
 
@@ -140,20 +137,20 @@ func SearchInput(rect rl.Rectangle) {
 
 func FiltersExpandButton(rect rl.Rectangle) {
 	rect.Y += (rect.Height - c.ICON_BUTTON_SIZE_GHOST) / 2
-	c.IconButton("filter-expand", c.ICON_FILTER, c.ICON_BUTTON_GHOST, rect, &ui, &textures, mousePoint)
+	comp.IconButton("filter-expand", c.ICON_FILTER, c.ICON_BUTTON_GHOST, rect)
 }
 
-func UpperPartTabs() ContrainedComponent {
+func UpperPartTabs() lib.ContrainedComponent {
 	return func(rect rl.Rectangle) {
-		value := Tabs(TabsProps{
-			Items: []TabsItemProps{
+		value := comp.Tabs(c.TabsProps{
+			Items: []c.TabsItemProps{
 				{
-					Icon:  c.ICON_REPEAT,
+					Icon:  c.ICON_MUSIC,
 					Label: "Songs",
 					Value: "songs",
 				},
 				{
-					Icon:  c.ICON_VOLUME_MUTED,
+					Icon:  c.ICON_PLAYLIST,
 					Label: "Playlists",
 					Value: "playlists",
 				},
@@ -166,7 +163,7 @@ func UpperPartTabs() ContrainedComponent {
 }
 
 func PanelSidebarButton(rect rl.Rectangle) {
-	c.IconButton("sidebar-collapse", c.ICON_SIDEBAR, c.ICON_BUTTON_GHOST, rl.NewRectangle(rect.X, rect.Y+5, rect.Width, rect.Height), &ui, &textures, mousePoint)
+	comp.IconButton("sidebar-collapse", c.ICON_SIDEBAR, c.ICON_BUTTON_GHOST, rl.NewRectangle(rect.X, rect.Y+5, rect.Width, rect.Height))
 }
 
 func PanelSettingsButton(rect rl.Rectangle) {
@@ -175,20 +172,20 @@ func PanelSettingsButton(rect rl.Rectangle) {
 		variant = c.ICON_BUTTON_SECONDARY
 	}
 
-	if c.IconButton("settings-button", c.ICON_SETTINGS, variant, rl.NewRectangle(rect.X, rect.Y+5, rect.Width, rect.Height), &ui, &textures, mousePoint) {
+	if comp.IconButton("settings-button", c.ICON_SETTINGS, variant, rl.NewRectangle(rect.X, rect.Y+5, rect.Width, rect.Height)) {
 		ui.SelectedPanelPage = lib.PANEL_PAGE_SETTINGS
 	}
 }
 
-func SongList() ContrainedComponent {
+func SongList() lib.ContrainedComponent {
 	return func(rect rl.Rectangle) {
 		iRect := rect.ToInt32()
 		rl.BeginScissorMode(iRect.X-4, iRect.Y-4, iRect.Width+8, iRect.Height+8)
 
 		rectWithOffset := rl.NewRectangle(rect.X, rect.Y, rect.Width, rect.Height)
 
-		container := NewLayout(Layout{
-			Direction: DIRECTION_COLUMN,
+		container := lib.NewLayout(lib.Layout{
+			Direction: lib.DIRECTION_COLUMN,
 			Gap:       12,
 		}, rectWithOffset)
 
@@ -216,9 +213,9 @@ func SongList() ContrainedComponent {
 		rl.EndScissorMode()
 
 		h := float32(rect.Height) - 10
-		if container.Size.Height > h {
+		if container.Size.Height > h && (IsActive() || rl.CheckCollisionPointRec(mousePoint, rl.NewRectangle(rect.X-12, rect.Y, rect.Width+12, rect.Height))) {
 			scrollbarThumbRatio := h / container.Size.Height
-			thumbHeight := lib.Clamp(h*scrollbarThumbRatio, 28, 100)
+			thumbHeight := lib.Clamp(h*scrollbarThumbRatio, 28, 400)
 
 			maxScroll := container.Size.Height - h
 			scrollProgress := rl.Clamp((ui.SidePanelScrollTop*-1)/maxScroll, 0, 1)
@@ -226,11 +223,26 @@ func SongList() ContrainedComponent {
 
 			thumbY := rect.Y + scrollProgress*movableSpace
 			thumbRect := rl.NewRectangle(rect.X-12, thumbY, 4, thumbHeight)
-			c.DrawRectangleRoundedPixels(
-				thumbRect,
-				8,
-				rl.White,
-			)
+
+			sliderProps := SliderProps{
+				Value:      scrollProgress,
+				Rect:       rl.NewRectangle(thumbRect.X, rect.Y, thumbRect.Width, rect.Height),
+				Color:      rl.Blank,
+				TrackColor: rl.Blank,
+				Thumb: Thumb{
+					Size: lib.Size{
+						Width:  5,
+						Height: thumbHeight,
+					},
+					Roundness: 4,
+				},
+				Direction: SLIDER_DIRECTION_VERTICAL,
+				Id:        "scroll-bar",
+			}
+			newSliderValue := Slider(sliderProps)
+			if IsActive() {
+				scrollTo(-(maxScroll * newSliderValue))
+			}
 		}
 	}
 }
@@ -242,8 +254,8 @@ func isSongCardaHidden(rect rl.Rectangle) bool {
 	return rect.Y < -200 || rect.Y > float32(ui.ScreenH)+200
 }
 
-func SongCard(song lib.Song, index int, containerRect rl.Rectangle) Component {
-	return func(position Position, next Next) {
+func SongCard(song lib.Song, index int, containerRect rl.Rectangle) lib.Component {
+	return func(position lib.Position, next lib.Next) {
 		var height float32 = 72
 		var rect = position.ToRect(position.Contrains.Width, height)
 		rect.Y += ui.SidePanelScrollTop
@@ -255,15 +267,15 @@ func SongCard(song lib.Song, index int, containerRect rl.Rectangle) Component {
 		}
 
 		textures.LoadSongCard(song, rect)
-		padding := Padding{}
+		padding := lib.Padding{}
 		padding.Axis(20, 16)
-		cardContent := NewConstrainedLayout(ContrainedLayout{
-			Direction: DIRECTION_COLUMN,
+		cardContent := lib.NewConstrainedLayout(lib.ContrainedLayout{
+			Direction: lib.DIRECTION_COLUMN,
 			Padding:   padding,
 			Contrains: rect,
-			ChildrenSize: []ChildSize{
-				{SizeType: SIZE_ABSOLUTE, Value: titleHeight},
-				{SizeType: SIZE_ABSOLUTE, Value: artistHeight},
+			ChildrenSize: []lib.ChildSize{
+				{SizeType: lib.SIZE_ABSOLUTE, Value: titleHeight},
+				{SizeType: lib.SIZE_ABSOLUTE, Value: artistHeight},
 			},
 		})
 
@@ -276,14 +288,14 @@ func SongCard(song lib.Song, index int, containerRect rl.Rectangle) Component {
 		buttonColor := rl.Fade(rl.Black, 0.42)
 		isSelected := songTable.SelectedSong().Path == song.Path
 		if isSelected {
-			buttonColor = rl.Fade(rl.Black, 0.1)
+			buttonColor = rl.Fade(rl.Black, 0.3)
 		} else {
 			state := interactable.State()
 			switch state {
 			case c.STATE_HOT:
-				buttonColor = rl.Fade(rl.Black, 0.4)
+				buttonColor = rl.Fade(rl.Black, 0.5)
 			case c.STATE_ACTIVE:
-				buttonColor = rl.Fade(rl.Black, 0.3)
+				buttonColor = rl.Fade(rl.Black, 0.4)
 			}
 		}
 
@@ -297,18 +309,17 @@ func SongCard(song lib.Song, index int, containerRect rl.Rectangle) Component {
 			c.DrawRectangleRoundedLinePixels(rect, c.ROUNDED+2, 4, rl.White)
 		}
 
-		cardContent.Render(SongCardText(song.Title, 20))
-		cardContent.Render(SongCardText(song.Artist, 14))
+		cardContent.Render(SongCardText(song.Title, theme.FontSize.Large, theme.FontWeight.Bold, rl.White))
+		cardContent.Render(SongCardText(song.Artist, theme.FontSize.Small, theme.FontWeight.Regular, theme.Colors.Text))
 
 		next(rect)
 	}
 }
 
-func SongCardText(text string, fontSize float32) ContrainedComponent {
+func SongCardText(text string, fontSize theme.Text, weight theme.Weight, color rl.Color) lib.ContrainedComponent {
 	return func(rect rl.Rectangle) {
-		font := rl.GetFontDefault()
-		rl.DrawTextEx(font, text, rl.NewVector2(rect.X-1, rect.Y-1), fontSize, 2, rl.Fade(rl.Black, 0.6))
-		rl.DrawTextEx(font, text, rl.NewVector2(rect.X+1, rect.Y+1), fontSize, 2, rl.Fade(rl.Black, 0.6))
-		rl.DrawTextEx(font, text, rl.NewVector2(rect.X, rect.Y), fontSize, 2, rl.White)
+		lib.Typography(text, rl.NewVector2(rect.X-1, rect.Y-1), fontSize, weight, rl.Fade(rl.Black, 0.6), typographyMap)
+		lib.Typography(text, rl.NewVector2(rect.X+1, rect.Y+1), fontSize, weight, rl.Fade(rl.Black, 0.6), typographyMap)
+		lib.Typography(text, rl.NewVector2(rect.X, rect.Y), fontSize, weight, color, typographyMap)
 	}
 }

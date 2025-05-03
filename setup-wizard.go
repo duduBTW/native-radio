@@ -27,19 +27,19 @@ func SetupWizardPage() {
 	rect := rl.NewRectangle(float32(containerX), float32(containerY), float32(containerWidth), float32(containerHeight))
 	c.DrawRectangleRoundedPixels(rect, c.ROUNDED, rl.NewColor(39, 39, 42, 255))
 
-	padding := Padding{}
+	padding := lib.Padding{}
 	padding.Axis(26, 0)
 	padding.Top(82)
 	padding.Bottom(32)
-	layout := NewConstrainedLayout(ContrainedLayout{
-		Direction: DIRECTION_COLUMN,
+	layout := lib.NewConstrainedLayout(lib.ContrainedLayout{
+		Direction: lib.DIRECTION_COLUMN,
 		Padding:   padding,
 		Contrains: rect,
 		Gap:       24,
-		ChildrenSize: []ChildSize{
-			{SizeType: SIZE_WEIGHT, Value: 0.5},
-			{SizeType: SIZE_ABSOLUTE, Value: 72},
-			{SizeType: SIZE_WEIGHT, Value: 0.5},
+		ChildrenSize: []lib.ChildSize{
+			{SizeType: lib.SIZE_WEIGHT, Value: 0.5},
+			{SizeType: lib.SIZE_ABSOLUTE, Value: 72},
+			{SizeType: lib.SIZE_WEIGHT, Value: 0.5},
 		},
 	})
 
@@ -58,8 +58,8 @@ func SetupTitle(rect rl.Rectangle) {
 }
 
 func SetupFolderSelector(rect rl.Rectangle) {
-	layout := NewLayout(Layout{
-		Direction: DIRECTION_COLUMN,
+	layout := lib.NewLayout(lib.Layout{
+		Direction: lib.DIRECTION_COLUMN,
 		Gap:       6,
 	}, rect)
 
@@ -67,26 +67,26 @@ func SetupFolderSelector(rect rl.Rectangle) {
 	layout.Render(SetupFolderSelectorInput)
 }
 
-func SetupFolderSelectorTitle(pos Position, next Next) {
+func SetupFolderSelectorTitle(pos lib.Position, next lib.Next) {
 	text := "Your osu! Songs folder"
 	var fontSize int32 = 16
 	rl.DrawText(text, int32(pos.X), int32(pos.Y), fontSize, rl.White)
 	next(pos.ToRect(float32(rl.MeasureText(text, fontSize)), float32(fontSize)))
 }
 
-func SetupFolderSelectorInput(pos Position, next Next) {
+func SetupFolderSelectorInput(pos lib.Position, next lib.Next) {
 	rect := pos.ToRect(pos.Contrains.Width, 46)
-	padding := Padding{}
+	padding := lib.Padding{}
 	padding.All(4)
 	padding.Start(16)
-	layout := NewConstrainedLayout(ContrainedLayout{
-		Direction: DIRECTION_ROW,
+	layout := lib.NewConstrainedLayout(lib.ContrainedLayout{
+		Direction: lib.DIRECTION_ROW,
 		Padding:   padding,
 		Contrains: rect,
 		Gap:       12,
-		ChildrenSize: []ChildSize{
-			{SizeType: SIZE_WEIGHT, Value: 1},
-			{SizeType: SIZE_ABSOLUTE, Value: 128},
+		ChildrenSize: []lib.ChildSize{
+			{SizeType: lib.SIZE_WEIGHT, Value: 1},
+			{SizeType: lib.SIZE_ABSOLUTE, Value: 128},
 		},
 	})
 
@@ -104,17 +104,17 @@ func SetupFolderSelectorText(rect rl.Rectangle) {
 }
 
 func SetupFolderSelectorButton(rect rl.Rectangle) {
-	getButtonStyle := func(color rl.Color) ButtonStyle {
-		return ButtonStyle{Color: color, BorderRadius: c.ROUNDED}
+	getButtonStyle := func(color rl.Color) c.ButtonStyle {
+		return c.ButtonStyle{Color: color, BorderRadius: c.ROUNDED}
 	}
 
-	buttonStyle := ButtonStyles{
+	buttonStyle := c.ButtonStyles{
 		c.STATE_INITIAL: getButtonStyle(rl.Fade(rl.White, 0.15)),
 		c.STATE_HOT:     getButtonStyle(rl.Fade(rl.White, 0.2)),
 		c.STATE_ACTIVE:  getButtonStyle(rl.Fade(rl.White, 0.4)),
 	}
 
-	if Button("select-folder", rect, buttonStyle) {
+	if comp.Button("select-folder", rect, buttonStyle) {
 		dir, err := zenity.SelectFile(
 			zenity.Title("Select the osu! lazer folder"),
 			zenity.Directory(), // This makes it folder-only
@@ -139,17 +139,17 @@ func SetupSubmitButton(container rl.Rectangle) {
 	btnX := container.X + container.Width - width
 	btnY := container.Y + container.Height - height
 	rect := rl.NewRectangle(btnX, btnY, width, height)
-	getButtonStyle := func(color rl.Color) ButtonStyle {
-		return ButtonStyle{Color: color, BorderRadius: c.ROUNDED}
+	getButtonStyle := func(color rl.Color) c.ButtonStyle {
+		return c.ButtonStyle{Color: color, BorderRadius: c.ROUNDED}
 	}
 
-	buttonStyle := ButtonStyles{
+	buttonStyle := c.ButtonStyles{
 		c.STATE_INITIAL: getButtonStyle(rl.Fade(rl.White, 1)),
 		c.STATE_HOT:     getButtonStyle(rl.Fade(rl.White, 0.9)),
 		c.STATE_ACTIVE:  getButtonStyle(rl.Fade(rl.White, 0.8)),
 	}
 
-	if Button("submit", rect, buttonStyle) {
+	if comp.Button("submit", rect, buttonStyle) {
 		ExecTrash(selectedFolder)
 	}
 
