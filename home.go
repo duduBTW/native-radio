@@ -22,6 +22,11 @@ func HomePage() {
 		music.Play()
 	}
 
+	// Toggle sidebar
+	if rl.IsKeyDown(rl.KeyLeftControl) && rl.IsKeyPressed(rl.KeyB) {
+		ui.TogglePanel()
+	}
+
 	// Space pause
 	if rl.IsKeyPressed(rl.KeySpace) && ui.FocusedId == "" {
 		music.Toggle()
@@ -38,18 +43,23 @@ func HomePage() {
 	}
 
 	// Components
-	padding := lib.Padding{}
+	childrenSize := []lib.ChildSize{}
+	if ui.SidePanelExpanded {
+		childrenSize = append(childrenSize, lib.ChildSize{SizeType: lib.SIZE_ABSOLUTE, Value: 520})
+	}
+	childrenSize = append(childrenSize, lib.ChildSize{SizeType: lib.SIZE_WEIGHT, Value: 1})
 	var home = lib.NewConstrainedLayout(lib.ContrainedLayout{
-		Contrains: rl.Rectangle{Width: float32(ui.ScreenW), Height: float32(ui.ScreenH), X: 0, Y: 0},
-		Direction: lib.DIRECTION_ROW,
-		Padding:   padding,
-		ChildrenSize: []lib.ChildSize{
-			{SizeType: lib.SIZE_ABSOLUTE, Value: 520},
-			{SizeType: lib.SIZE_WEIGHT, Value: 1},
-		},
+		Contrains:    rl.Rectangle{Width: float32(ui.ScreenW), Height: float32(ui.ScreenH), X: 0, Y: 0},
+		Direction:    lib.DIRECTION_ROW,
+		Padding:      lib.Padding{},
+		ChildrenSize: childrenSize,
 	})
 
-	home.Render(Panel)
+	if ui.SidePanelExpanded {
+		home.Render(Panel)
+	} else {
+		PanelSidebarButton(rl.NewRectangle(20, 24, 0, 0))
+	}
 	home.Render(SongDetails(typographyMap))
 }
 
@@ -83,7 +93,6 @@ func Panel(rect rl.Rectangle) {
 	switch ui.SelectedPanelPage {
 	case lib.PANEL_PAGE_SONGS:
 		container.Render(SongList())
-
 	}
 }
 
@@ -163,7 +172,9 @@ func UpperPartTabs() lib.ContrainedComponent {
 }
 
 func PanelSidebarButton(rect rl.Rectangle) {
-	comp.IconButton("sidebar-collapse", c.ICON_SIDEBAR, c.ICON_BUTTON_GHOST, rl.NewRectangle(rect.X, rect.Y+5, rect.Width, rect.Height))
+	if comp.IconButton("sidebar-collapse", c.ICON_SIDEBAR, c.ICON_BUTTON_GHOST, rl.NewRectangle(rect.X, rect.Y+5, rect.Width, rect.Height)) {
+		ui.TogglePanel()
+	}
 }
 
 func PanelSettingsButton(rect rl.Rectangle) {

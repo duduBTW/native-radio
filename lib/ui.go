@@ -7,9 +7,12 @@ import (
 )
 
 type UIStruct struct {
+	ScreenW int32
+	ScreenH int32
+
+	// Side Panel
 	SidePanelScrollTop float32
-	ScreenW            int32
-	ScreenH            int32
+	SidePanelExpanded  bool
 
 	SelectedPanelPage PanelPage
 	SelectedPage      Page
@@ -22,6 +25,7 @@ type UIStruct struct {
 	IsMuted          bool
 	LastTimeScrolled time.Time
 
+	// Search Input
 	SearchValue      string
 	InputCursorStart int
 	InputCursorEnd   int
@@ -31,6 +35,9 @@ type UIStruct struct {
 	BlinkingTimer float32
 }
 
+func (ui *UIStruct) TogglePanel() {
+	ui.SidePanelExpanded = !ui.SidePanelExpanded
+}
 func (ui *UIStruct) SetCursors(pos int) {
 	ui.InputCursorStart = pos
 	ui.InputCursorEnd = pos
@@ -57,6 +64,7 @@ func NewUi(table *SongTable) UIStruct {
 		SelectedPanelPage: PANEL_PAGE_SONGS,
 		SelectedPage:      selectedPage,
 		Volume:            0.5,
+		SidePanelExpanded: true,
 	}
 	return ui
 }
@@ -103,12 +111,10 @@ func ImageFitCordinates(origin rl.Vector2, target rl.Vector2) rl.Rectangle {
 // }
 
 func DrawFitTexture(tex rl.Texture2D, dest rl.Rectangle, tint rl.Color) {
-	// use the texture’s fields, not some stale origin you pulled earlier
 	origin := rl.NewVector2(float32(tex.Width), float32(tex.Height))
 	target := rl.NewVector2(dest.Width, dest.Height)
 
 	src := ImageFitCordinates(origin, target)
-	// now src.X/Y/W/H line up exactly with GPU‐side pixels
 
 	rl.DrawTexturePro(
 		tex,
